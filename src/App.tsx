@@ -260,7 +260,11 @@ function App() {
           </svg>
           <h1 style={styles.title}>EternLink</h1>
         </div>
+<<<<<<< HEAD
         <p style={styles.subtitle}>Blockchain Proof of Existence · Eternal Protection for Your Digital Assets</p>
+=======
+        <p style={styles.subtitle}>区块链存在性证明 · 永恒守护您的数字资产</p>
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
       </motion.div>
 
       {/* Main Content */}
@@ -277,11 +281,19 @@ function App() {
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
                 <path d="M10 2L3 6V10C3 14 6 17.5 10 19C14 17.5 17 14 17 10V6L10 2Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
               </svg>
+<<<<<<< HEAD
               Blockchain Configuration
             </h3>
 
             <div style={styles.inputGroup}>
               <label style={styles.label}>Contract Address</label>
+=======
+              区块链配置
+            </h3>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>合约地址</label>
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
               <input
                 type="text"
                 value={contractAddress}
@@ -292,18 +304,30 @@ function App() {
             </div>
 
             <div style={styles.inputGroup}>
+<<<<<<< HEAD
               <label style={styles.label}>Chain ID</label>
+=======
+              <label style={styles.label}>链 ID</label>
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
               <input
                 type="number"
                 value={chainId}
                 onChange={(e) => setChainId(Number(e.target.value))}
                 style={styles.input}
               />
+<<<<<<< HEAD
               <span style={styles.hint}>Base Sepolia Testnet</span>
             </div>
 
             <div style={styles.inputGroup}>
               <label style={styles.label}>IPFS CID (Optional)</label>
+=======
+              <span style={styles.hint}>Base Sepolia 测试网</span>
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>IPFS CID (可选)</label>
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
               <input
                 type="text"
                 value={ipfsCid}
@@ -322,7 +346,11 @@ function App() {
                     <path d="M6 6V5C6 3.34315 7.34315 2 9 2H11C12.6569 2 14 3.34315 14 5V6" stroke="white" strokeWidth="1.5"/>
                     <circle cx="10" cy="11" r="1.5" fill="white"/>
                   </svg>
+<<<<<<< HEAD
                   Connect MetaMask
+=======
+                  连接 MetaMask
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
                 </button>
               ) : (
                 <div style={styles.connectedWallet}>
@@ -340,6 +368,7 @@ function App() {
 
           {/* Info Card */}
           <div style={{...styles.card, ...styles.infoCard}}>
+<<<<<<< HEAD
             <h4 style={styles.infoCardTitle}>How to Use</h4>
             <ol style={styles.infoList}>
               <li>Deploy ProofOfExistence.sol contract</li>
@@ -348,6 +377,16 @@ function App() {
               <li>Encrypted file will be downloaded automatically</li>
               <li>File hash will be registered on blockchain</li>
               <li>Verify file existence anytime</li>
+=======
+            <h4 style={styles.infoCardTitle}>使用说明</h4>
+            <ol style={styles.infoList}>
+              <li>部署 ProofOfExistence.sol 合约</li>
+              <li>填写合约地址并连接钱包</li>
+              <li>选择文件并设置加密密码</li>
+              <li>加密后文件会自动下载到本地</li>
+              <li>文件哈希会被登记到区块链</li>
+              <li>可随时验证文件存在性</li>
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
             </ol>
           </div>
         </motion.div>
@@ -365,7 +404,11 @@ function App() {
                 <path d="M4 4C4 2.89543 4.89543 2 6 2H11L16 7V16C16 17.1046 15.1046 18 14 18H6C4.89543 18 4 17.1046 4 16V4Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
                 <path d="M11 2V7H16" stroke="var(--accent-primary)" strokeWidth="1.5"/>
               </svg>
+<<<<<<< HEAD
               File Operations
+=======
+              文件操作
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
             </h3>
 
             {/* File Upload */}
@@ -383,7 +426,11 @@ function App() {
                   <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="var(--accent-secondary)" strokeWidth="2.5" strokeLinecap="round"/>
                 </svg>
                 <span style={styles.uploadText}>
+<<<<<<< HEAD
                   {file ? file.name : 'Click to select file or drag & drop here'}
+=======
+                  {file ? file.name : '点击选择文件或拖拽到此处'}
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
                 </span>
                 {file && (
                   <span style={styles.uploadHint}>
@@ -392,7 +439,11 @@ function App() {
                 )}
                 {!file && (
                   <span style={styles.uploadHint}>
+<<<<<<< HEAD
                     Supports .txt format
+=======
+                    支持 .txt 格式
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
                   </span>
                 )}
               </label>
@@ -400,16 +451,28 @@ function App() {
 
             {/* Password Input */}
             <div style={styles.inputGroup}>
+<<<<<<< HEAD
               <label style={styles.label}>Encryption Password</label>
+=======
+              <label style={styles.label}>加密密码</label>
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+<<<<<<< HEAD
                 placeholder="Enter a strong password and keep it safe"
                 style={styles.input}
               />
               <span style={styles.hint}>
                 Password is used for local encryption and cannot be recovered if lost
+=======
+                placeholder="请输入强密码并妥善保管"
+                style={styles.input}
+              />
+              <span style={styles.hint}>
+                密码用于本地加密，丢失后无法恢复
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
               </span>
             </div>
 
@@ -429,7 +492,11 @@ function App() {
                   <path d="M7 9V6C7 4.34315 8.34315 3 10 3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5"/>
                   <circle cx="10" cy="13" r="1" fill="white"/>
                 </svg>
+<<<<<<< HEAD
                 {loading ? "Processing..." : "Encrypt & Register"}
+=======
+                {loading ? "处理中..." : "加密并登记上链"}
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
               </button>
 
               <button
@@ -446,7 +513,11 @@ function App() {
                   <path d="M14 14L18 18" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
                   <path d="M7 9L8.5 10.5L12 7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
+<<<<<<< HEAD
                 Verify on Chain
+=======
+                链上验证存在
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
               </button>
             </div>
 
@@ -492,7 +563,11 @@ function App() {
                 style={styles.txInfo}
               >
                 <div style={styles.txRow}>
+<<<<<<< HEAD
                   <span style={styles.txLabel}>Transaction Hash:</span>
+=======
+                  <span style={styles.txLabel}>交易哈希:</span>
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
                   <a
                     href={`https://sepolia.basescan.org/tx/${txHash}`}
                     target="_blank"
@@ -507,7 +582,11 @@ function App() {
                 </div>
                 {fileHash && (
                   <div style={styles.txRow}>
+<<<<<<< HEAD
                     <span style={styles.txLabel}>File Hash:</span>
+=======
+                    <span style={styles.txLabel}>文件哈希:</span>
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
                     <code style={styles.hashCode}>
                       {fileHash.slice(0, 16)}...{fileHash.slice(-16)}
                     </code>
@@ -530,10 +609,17 @@ function App() {
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginRight: '6px' }}>
             <path d="M8 2L3 5V8C3 11 5 13.5 8 15C11 13.5 13 11 13 8V5L8 2Z" stroke="var(--text-muted)" strokeWidth="1.2" fill="none"/>
           </svg>
+<<<<<<< HEAD
           EternLink · Blockchain-Based Proof of Existence System
         </p>
         <p style={styles.footerCopy}>
           Secured with AES-256-GCM Encryption · Base Sepolia L2 Network
+=======
+          EternLink · 基于区块链的文件存在性证明系统
+        </p>
+        <p style={styles.footerCopy}>
+          使用 AES-256-GCM 加密 · Base Sepolia L2 网络
+>>>>>>> 114aec7 (feat: Redesign UI with logo-based color scheme)
         </p>
       </motion.footer>
     </div>

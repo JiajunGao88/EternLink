@@ -17,9 +17,9 @@ import {
   checkFileExists,
 } from "./utils/contract";
 
-// 默认配置
+// Default Configuration
 const DEFAULTS = {
-  CONTRACT_ADDRESS: "0xYourPoEContractAddressHere", // 请替换为部署的合约地址
+  CONTRACT_ADDRESS: "0xYourPoEContractAddressHere", // Replace with your deployed contract address
   CHAIN_ID: 84532, // Base Sepolia
   CIPHER: "AES-256-GCM+PBKDF2(250k, SHA-256)",
 };
@@ -47,7 +47,7 @@ function App() {
   const [fileHash, setFileHash] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
 
-  // 连接钱包
+  // Connect Wallet
   const handleConnectWallet = async () => {
     try {
       setStatus(null);
@@ -56,38 +56,38 @@ function App() {
       const address = await signer.getAddress();
       setAccount(address);
 
-      // 检查网络
+      // Check Network
       const isCorrectNetwork = await checkNetwork(provider, chainId);
       if (!isCorrectNetwork) {
         setStatus({
           type: "error",
-          message: `请切换到链 ID ${chainId} (Base Sepolia)`,
+          message: `Please switch to Chain ID ${chainId} (Base Sepolia)`,
         });
         await switchNetwork(chainId);
       } else {
         setStatus({
           type: "success",
-          message: `已连接钱包: ${address.slice(0, 6)}...${address.slice(-4)}`,
+          message: `Wallet Connected: ${address.slice(0, 6)}...${address.slice(-4)}`,
         });
       }
     } catch (error: any) {
       setStatus({
         type: "error",
-        message: error.message || "连接钱包失败",
+        message: error.message || "Failed to connect wallet",
       });
     }
   };
 
-  // 处理文件选择
+  // Handle File Selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    // 只允许 .txt 文件
+    // Only allow .txt files
     if (!selectedFile.name.endsWith(".txt")) {
       setStatus({
         type: "error",
-        message: "目前只支持 .txt 格式的文件",
+        message: "Currently only .txt files are supported",
       });
       return;
     }
@@ -102,22 +102,22 @@ function App() {
     });
     setStatus({
       type: "info",
-      message: `已选择文件: ${selectedFile.name} (${selectedFile.size} 字节)`,
+      message: `File selected: ${selectedFile.name} (${selectedFile.size} bytes)`,
     });
   };
 
-  // 加密并登记上链
+  // Encrypt and Register
   const handleEncryptAndRegister = async () => {
     if (!fileInfo) {
-      setStatus({ type: "error", message: "请先选择文件" });
+      setStatus({ type: "error", message: "Please select a file first" });
       return;
     }
     if (!password) {
-      setStatus({ type: "error", message: "请输入密码" });
+      setStatus({ type: "error", message: "Please enter a password" });
       return;
     }
     if (contractAddress === DEFAULTS.CONTRACT_ADDRESS) {
-      setStatus({ type: "error", message: "请先配置合约地址" });
+      setStatus({ type: "error", message: "Please configure the contract address" });
       return;
     }
 
@@ -125,23 +125,23 @@ function App() {
     setStatus(null);
 
     try {
-      // 1. 计算明文哈希
+      // 1. Calculate file hash
       const hash = await sha256(fileInfo.content);
       const hashHex = hex32(hash);
       setFileHash(hashHex);
-      setStatus({ type: "info", message: "已计算文件哈希" });
+      setStatus({ type: "info", message: "File hash calculated" });
 
-      // 2. 加密文件
+      // 2. Encrypt file
       const { encrypted, iv, salt } = await encryptFile(fileInfo.content, password);
-      setStatus({ type: "info", message: "文件加密完成" });
+      setStatus({ type: "info", message: "File encryption completed" });
 
-      // 3. 打包并下载加密文件
+      // 3. Pack and download encrypted file
       const encryptedBlob = packEncryptedFile(encrypted, iv, salt);
       const encryptedFileName = fileInfo.name + ".enc";
       downloadFile(encryptedBlob, encryptedFileName);
-      setStatus({ type: "info", message: "已下载加密文件" });
+      setStatus({ type: "info", message: "Encrypted file downloaded" });
 
-      // 4. 连接钱包并上链
+      // 4. Connect wallet and submit to blockchain
       const provider = await connectWallet();
       const isCorrectNetwork = await checkNetwork(provider, chainId);
       if (!isCorrectNetwork) {
@@ -152,8 +152,8 @@ function App() {
       const signer = await provider.getSigner();
       const contractWithSigner = contract.connect(signer);
 
-      // 5. 调用合约注册
-      setStatus({ type: "info", message: "正在提交交易到区块链..." });
+      // 5. Register on contract
+      setStatus({ type: "info", message: "Submitting transaction to blockchain..." });
       const tx = await registerFile(
         contractWithSigner,
         hashHex,
@@ -166,34 +166,34 @@ function App() {
       setTxHash(tx.hash);
       setStatus({
         type: "info",
-        message: `交易已提交: ${tx.hash}`,
+        message: `Transaction submitted: ${tx.hash}`,
       });
 
-      // 6. 等待交易确认
+      // 6. Wait for confirmation
       await tx.wait();
       setStatus({
         type: "success",
-        message: `文件已成功登记到区块链！交易哈希: ${tx.hash}`,
+        message: `File successfully registered on blockchain! TX: ${tx.hash}`,
       });
     } catch (error: any) {
       console.error(error);
       setStatus({
         type: "error",
-        message: error.message || "加密或上链失败",
+        message: error.message || "Encryption or registration failed",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // 验证文件存在
+  // Verify File Existence
   const handleVerifyFile = async () => {
     if (!fileInfo) {
-      setStatus({ type: "error", message: "请先选择文件" });
+      setStatus({ type: "error", message: "Please select a file first" });
       return;
     }
     if (contractAddress === DEFAULTS.CONTRACT_ADDRESS) {
-      setStatus({ type: "error", message: "请先配置合约地址" });
+      setStatus({ type: "error", message: "Please configure the contract address" });
       return;
     }
 
@@ -201,32 +201,32 @@ function App() {
     setStatus(null);
 
     try {
-      // 计算文件哈希
+      // Calculate file hash
       const hash = await sha256(fileInfo.content);
       const hashHex = hex32(hash);
 
-      // 连接钱包
+      // Connect wallet
       const provider = await connectWallet();
       const contract = getContract(contractAddress, provider);
 
-      // 检查是否存在
+      // Check if exists
       const exists = await checkFileExists(contract, hashHex);
 
       if (exists) {
         setStatus({
           type: "success",
-          message: "✅ 文件已存在于区块链上！",
+          message: "✅ File exists on blockchain!",
         });
       } else {
         setStatus({
           type: "error",
-          message: "❌ 文件不存在于区块链上",
+          message: "❌ File does not exist on blockchain",
         });
       }
     } catch (error: any) {
       setStatus({
         type: "error",
-        message: error.message || "验证失败",
+        message: error.message || "Verification failed",
       });
     } finally {
       setLoading(false);
@@ -260,7 +260,7 @@ function App() {
           </svg>
           <h1 style={styles.title}>EternLink</h1>
         </div>
-        <p style={styles.subtitle}>区块链存在性证明 · 永恒守护您的数字资产</p>
+        <p style={styles.subtitle}>Blockchain Proof of Existence · Eternal Protection for Your Digital Assets</p>
       </motion.div>
 
       {/* Main Content */}
@@ -277,11 +277,11 @@ function App() {
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
                 <path d="M10 2L3 6V10C3 14 6 17.5 10 19C14 17.5 17 14 17 10V6L10 2Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
               </svg>
-              区块链配置
+              Blockchain Configuration
             </h3>
 
             <div style={styles.inputGroup}>
-              <label style={styles.label}>合约地址</label>
+              <label style={styles.label}>Contract Address</label>
               <input
                 type="text"
                 value={contractAddress}
@@ -292,18 +292,18 @@ function App() {
             </div>
 
             <div style={styles.inputGroup}>
-              <label style={styles.label}>链 ID</label>
+              <label style={styles.label}>Chain ID</label>
               <input
                 type="number"
                 value={chainId}
                 onChange={(e) => setChainId(Number(e.target.value))}
                 style={styles.input}
               />
-              <span style={styles.hint}>Base Sepolia 测试网</span>
+              <span style={styles.hint}>Base Sepolia Testnet</span>
             </div>
 
             <div style={styles.inputGroup}>
-              <label style={styles.label}>IPFS CID (可选)</label>
+              <label style={styles.label}>IPFS CID (Optional)</label>
               <input
                 type="text"
                 value={ipfsCid}
@@ -322,7 +322,7 @@ function App() {
                     <path d="M6 6V5C6 3.34315 7.34315 2 9 2H11C12.6569 2 14 3.34315 14 5V6" stroke="white" strokeWidth="1.5"/>
                     <circle cx="10" cy="11" r="1.5" fill="white"/>
                   </svg>
-                  连接 MetaMask
+                  Connect MetaMask
                 </button>
               ) : (
                 <div style={styles.connectedWallet}>
@@ -340,14 +340,14 @@ function App() {
 
           {/* Info Card */}
           <div style={{...styles.card, ...styles.infoCard}}>
-            <h4 style={styles.infoCardTitle}>使用说明</h4>
+            <h4 style={styles.infoCardTitle}>How to Use</h4>
             <ol style={styles.infoList}>
-              <li>部署 ProofOfExistence.sol 合约</li>
-              <li>填写合约地址并连接钱包</li>
-              <li>选择文件并设置加密密码</li>
-              <li>加密后文件会自动下载到本地</li>
-              <li>文件哈希会被登记到区块链</li>
-              <li>可随时验证文件存在性</li>
+              <li>Deploy ProofOfExistence.sol contract</li>
+              <li>Enter contract address and connect wallet</li>
+              <li>Select file and set encryption password</li>
+              <li>Encrypted file will be downloaded automatically</li>
+              <li>File hash will be registered on blockchain</li>
+              <li>Verify file existence anytime</li>
             </ol>
           </div>
         </motion.div>
@@ -365,7 +365,7 @@ function App() {
                 <path d="M4 4C4 2.89543 4.89543 2 6 2H11L16 7V16C16 17.1046 15.1046 18 14 18H6C4.89543 18 4 17.1046 4 16V4Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
                 <path d="M11 2V7H16" stroke="var(--accent-primary)" strokeWidth="1.5"/>
               </svg>
-              文件操作
+              File Operations
             </h3>
 
             {/* File Upload */}
@@ -383,7 +383,7 @@ function App() {
                   <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="var(--accent-secondary)" strokeWidth="2.5" strokeLinecap="round"/>
                 </svg>
                 <span style={styles.uploadText}>
-                  {file ? file.name : '点击选择文件或拖拽到此处'}
+                  {file ? file.name : 'Click to select file or drag & drop here'}
                 </span>
                 {file && (
                   <span style={styles.uploadHint}>
@@ -392,7 +392,7 @@ function App() {
                 )}
                 {!file && (
                   <span style={styles.uploadHint}>
-                    支持 .txt 格式
+                    Supports .txt format
                   </span>
                 )}
               </label>
@@ -400,16 +400,16 @@ function App() {
 
             {/* Password Input */}
             <div style={styles.inputGroup}>
-              <label style={styles.label}>加密密码</label>
+              <label style={styles.label}>Encryption Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="请输入强密码并妥善保管"
+                placeholder="Enter a strong password and keep it safe"
                 style={styles.input}
               />
               <span style={styles.hint}>
-                密码用于本地加密，丢失后无法恢复
+                Password is used for local encryption and cannot be recovered if lost
               </span>
             </div>
 
@@ -429,7 +429,7 @@ function App() {
                   <path d="M7 9V6C7 4.34315 8.34315 3 10 3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5"/>
                   <circle cx="10" cy="13" r="1" fill="white"/>
                 </svg>
-                {loading ? "处理中..." : "加密并登记上链"}
+                {loading ? "Processing..." : "Encrypt & Register"}
               </button>
 
               <button
@@ -446,7 +446,7 @@ function App() {
                   <path d="M14 14L18 18" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
                   <path d="M7 9L8.5 10.5L12 7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
-                链上验证存在
+                Verify on Chain
               </button>
             </div>
 
@@ -492,7 +492,7 @@ function App() {
                 style={styles.txInfo}
               >
                 <div style={styles.txRow}>
-                  <span style={styles.txLabel}>交易哈希:</span>
+                  <span style={styles.txLabel}>Transaction Hash:</span>
                   <a
                     href={`https://sepolia.basescan.org/tx/${txHash}`}
                     target="_blank"
@@ -507,7 +507,7 @@ function App() {
                 </div>
                 {fileHash && (
                   <div style={styles.txRow}>
-                    <span style={styles.txLabel}>文件哈希:</span>
+                    <span style={styles.txLabel}>File Hash:</span>
                     <code style={styles.hashCode}>
                       {fileHash.slice(0, 16)}...{fileHash.slice(-16)}
                     </code>
@@ -530,10 +530,10 @@ function App() {
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginRight: '6px' }}>
             <path d="M8 2L3 5V8C3 11 5 13.5 8 15C11 13.5 13 11 13 8V5L8 2Z" stroke="var(--text-muted)" strokeWidth="1.2" fill="none"/>
           </svg>
-          EternLink · 基于区块链的文件存在性证明系统
+          EternLink · Blockchain-Based Proof of Existence System
         </p>
         <p style={styles.footerCopy}>
-          使用 AES-256-GCM 加密 · Base Sepolia L2 网络
+          Secured with AES-256-GCM Encryption · Base Sepolia L2 Network
         </p>
       </motion.footer>
     </div>

@@ -1,3 +1,57 @@
+/* ===== EternLink Design System ===== */
+/* 基于 Logo 提取的配色方案 */
+
+:root {
+  /* Primary Colors - 深蓝色主题 */
+  --bg-primary: #0a1628;
+  --bg-secondary: #0f1e2e;
+  --bg-tertiary: #1a2942;
+
+  /* Accent Colors - 银灰色系 */
+  --accent-primary: #8b9dc3;
+  --accent-secondary: #b4c5e4;
+  --accent-light: #dfe7f5;
+
+  /* UI Colors */
+  --card-bg: rgba(26, 41, 66, 0.6);
+  --card-border: rgba(139, 157, 195, 0.2);
+  --input-bg: rgba(15, 30, 46, 0.8);
+  --input-border: rgba(139, 157, 195, 0.3);
+  --input-focus: #8b9dc3;
+
+  /* Status Colors */
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+
+  /* Text Colors */
+  --text-primary: #dfe7f5;
+  --text-secondary: #8b9dc3;
+  --text-muted: #5a6b8a;
+
+  /* Shadow & Glow */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --glow-primary: 0 0 20px rgba(139, 157, 195, 0.3);
+  --glow-accent: 0 0 30px rgba(139, 157, 195, 0.5);
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -10,18 +64,73 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  /* 深蓝色渐变背景 - 呼应 Logo */
+  background: linear-gradient(135deg, #0a1628 0%, #0f1e2e 50%, #1a2942 100%);
+  background-attachment: fixed;
+
+  /* 添加噪点纹理 */
+  position: relative;
   min-height: 100vh;
   padding: 20px;
+  color: var(--text-primary);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(139, 157, 195, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(139, 157, 195, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 #root {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', source-code-pro, Menlo, Monaco,
+    Consolas, 'Courier New', monospace;
+  background: var(--input-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: var(--accent-secondary);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: 5px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-secondary);
+}
+
+/* 选中文本样式 */
+::selection {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
 }

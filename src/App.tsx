@@ -281,16 +281,21 @@ function App() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div style={styles.logoContainer}>
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              {/* Shield outline - single path */}
               <path
                 d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
                 stroke="var(--accent-primary)"
                 strokeWidth="2.5"
                 fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
+              {/* Heartbeat/EKG line in the middle */}
               <path
-                d="M16 24L20 28L32 16"
-                stroke="var(--accent-secondary)"
+                d="M12 24H18L21 18L24 30L27 20L30 24H36"
+                stroke="var(--accent-primary)"
                 strokeWidth="2.5"
+                fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />

@@ -72,14 +72,14 @@ export default function ShamirDemoEnhanced() {
           <h1 style={{
             fontSize: '42px',
             margin: 0,
-            color: '#dfe7f5',
+            color: '#C0C8D4',
             fontWeight: '700'
           }}>
             Shamir's Secret Sharing
           </h1>
           <p style={{
             fontSize: '16px',
-            color: '#8b9dc3',
+            color: '#8b96a8',
             marginTop: '12px'
           }}>
             Split your password into 3 shares · Any 2 shares can reconstruct it
@@ -118,7 +118,7 @@ export default function ShamirDemoEnhanced() {
               display: 'block',
               fontSize: '14px',
               fontWeight: '600',
-              color: '#8b9dc3',
+              color: '#8b96a8',
               marginBottom: '8px',
               textTransform: 'uppercase',
               letterSpacing: '0.05em'
@@ -134,16 +134,16 @@ export default function ShamirDemoEnhanced() {
                 width: '100%',
                 padding: '14px 16px',
                 backgroundColor: 'rgba(15, 30, 46, 0.8)',
-                border: '1px solid rgba(139, 157, 195, 0.3)',
+                border: '1px solid rgba(192, 200, 212, 0.3)',
                 borderRadius: '8px',
                 fontSize: '16px',
-                color: '#dfe7f5',
+                color: '#C0C8D4',
                 outline: 'none',
                 transition: 'border-color 0.3s ease',
                 boxSizing: 'border-box'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#8b9dc3'}
-              onBlur={(e) => e.target.style.borderColor = 'rgba(139, 157, 195, 0.3)'}
+              onFocus={(e) => e.target.style.borderColor = '#C0C8D4'}
+              onBlur={(e) => e.target.style.borderColor = 'rgba(192, 200, 212, 0.3)'}
             />
           </div>
 
@@ -153,8 +153,8 @@ export default function ShamirDemoEnhanced() {
             style={{
               width: '100%',
               padding: '14px 24px',
-              background: password ? 'linear-gradient(135deg, #8b9dc3 0%, #b4c5e4 100%)' : '#555',
-              color: 'white',
+              background: password ? 'linear-gradient(135deg, #A8B2C0 0%, #C0C8D4 100%)' : '#555',
+              color: '#0a1628',
               border: 'none',
               borderRadius: '8px',
               fontSize: '16px',
@@ -173,7 +173,7 @@ export default function ShamirDemoEnhanced() {
           <section>
             <h2 style={{
               fontSize: '24px',
-              color: '#dfe7f5',
+              color: '#C0C8D4',
               marginBottom: '24px',
               textAlign: 'center'
             }}>
@@ -214,7 +214,7 @@ export default function ShamirDemoEnhanced() {
 
                 <h3 style={{
                   fontSize: '18px',
-                  color: '#dfe7f5',
+                  color: '#C0C8D4',
                   marginBottom: '8px',
                   fontWeight: '600'
                 }}>
@@ -222,7 +222,7 @@ export default function ShamirDemoEnhanced() {
                 </h3>
                 <p style={{
                   fontSize: '13px',
-                  color: '#8b9dc3',
+                  color: '#8b96a8',
                   marginBottom: '16px'
                 }}>
                   Stored on User Device
@@ -230,14 +230,14 @@ export default function ShamirDemoEnhanced() {
 
                 <div style={{
                   backgroundColor: 'rgba(15, 30, 46, 0.8)',
-                  border: '1px solid rgba(139, 157, 195, 0.2)',
+                  border: '1px solid rgba(192, 200, 212, 0.2)',
                   borderRadius: '8px',
                   padding: '12px',
                   marginBottom: '12px'
                 }}>
                   <code style={{
                     fontSize: '11px',
-                    color: '#b4c5e4',
+                    color: '#C0C8D4',
                     wordBreak: 'break-all',
                     fontFamily: 'monospace'
                   }}>
@@ -250,16 +250,16 @@ export default function ShamirDemoEnhanced() {
                   style={{
                     width: '100%',
                     padding: '10px',
-                    backgroundColor: 'rgba(139, 157, 195, 0.2)',
-                    border: '1px solid rgba(139, 157, 195, 0.3)',
+                    backgroundColor: 'rgba(192, 200, 212, 0.2)',
+                    border: '1px solid rgba(192, 200, 212, 0.3)',
                     borderRadius: '6px',
-                    color: '#dfe7f5',
+                    color: '#C0C8D4',
                     fontSize: '14px',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(139, 157, 195, 0.3)'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(139, 157, 195, 0.2)'}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(192, 200, 212, 0.3)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(192, 200, 212, 0.2)'}
                 >
                   📋 Copy Share 1
                 </button>
@@ -294,7 +294,7 @@ export default function ShamirDemoEnhanced() {
 
                 <h3 style={{
                   fontSize: '18px',
-                  color: '#dfe7f5',
+                  color: '#C0C8D4',
                   marginBottom: '8px',
                   fontWeight: '600',
                   textAlign: 'center'
@@ -303,7 +303,7 @@ export default function ShamirDemoEnhanced() {
                 </h3>
                 <p style={{
                   fontSize: '13px',
-                  color: '#8b9dc3',
+                  color: '#8b96a8',
                   marginBottom: '24px',
                   textAlign: 'center'
                 }}>
@@ -336,7 +336,7 @@ export default function ShamirDemoEnhanced() {
                     </div>
                     <p style={{
                       fontSize: '12px',
-                      color: '#8b9dc3',
+                      color: '#8b96a8',
                       textAlign: 'center',
                       margin: 0
                     }}>
@@ -375,7 +375,7 @@ export default function ShamirDemoEnhanced() {
 
                 <h3 style={{
                   fontSize: '18px',
-                  color: '#dfe7f5',
+                  color: '#C0C8D4',
                   marginBottom: '8px',
                   fontWeight: '600'
                 }}>
@@ -383,7 +383,7 @@ export default function ShamirDemoEnhanced() {
                 </h3>
                 <p style={{
                   fontSize: '13px',
-                  color: '#8b9dc3',
+                  color: '#8b96a8',
                   marginBottom: '16px'
                 }}>
                   Embedded in File Metadata
@@ -391,14 +391,14 @@ export default function ShamirDemoEnhanced() {
 
                 <div style={{
                   backgroundColor: 'rgba(15, 30, 46, 0.8)',
-                  border: '1px solid rgba(23, 162, 184, 0.2)',
+                  border: '1px solid rgba(192, 200, 212, 0.2)',
                   borderRadius: '8px',
                   padding: '12px',
                   marginBottom: '12px'
                 }}>
                   <code style={{
                     fontSize: '11px',
-                    color: '#17a2b8',
+                    color: '#C0C8D4',
                     wordBreak: 'break-all',
                     fontFamily: 'monospace'
                   }}>
@@ -411,16 +411,16 @@ export default function ShamirDemoEnhanced() {
                   style={{
                     width: '100%',
                     padding: '10px',
-                    backgroundColor: 'rgba(23, 162, 184, 0.2)',
-                    border: '1px solid rgba(23, 162, 184, 0.3)',
+                    backgroundColor: 'rgba(192, 200, 212, 0.2)',
+                    border: '1px solid rgba(192, 200, 212, 0.3)',
                     borderRadius: '6px',
-                    color: '#17a2b8',
+                    color: '#C0C8D4',
                     fontSize: '14px',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(23, 162, 184, 0.3)'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(23, 162, 184, 0.2)'}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(192, 200, 212, 0.3)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(192, 200, 212, 0.2)'}
                 >
                   📋 Copy Share 3
                 </button>
@@ -431,20 +431,20 @@ export default function ShamirDemoEnhanced() {
             <div style={{
               marginTop: '32px',
               padding: '20px',
-              backgroundColor: 'rgba(139, 157, 195, 0.05)',
-              border: '1px solid rgba(139, 157, 195, 0.15)',
+              backgroundColor: 'rgba(192, 200, 212, 0.05)',
+              border: '1px solid rgba(192, 200, 212, 0.15)',
               borderRadius: '12px',
               textAlign: 'center'
             }}>
               <p style={{
-                color: '#8b9dc3',
+                color: '#8b96a8',
                 fontSize: '14px',
                 margin: 0
               }}>
                 ✅ Any 2 of these 3 shares can reconstruct your original password
               </p>
               <p style={{
-                color: '#8b9dc3',
+                color: '#8b96a8',
                 fontSize: '14px',
                 margin: '8px 0 0',
                 opacity: 0.7

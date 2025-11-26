@@ -16,6 +16,9 @@ import {
   registerFile,
   checkFileExists,
 } from "./utils/contract";
+// import ShamirDemo from "./components/ShamirDemo";
+// import ShamirDemoSimple from "./components/ShamirDemoSimple";
+import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
 
 // Default Configuration
 const DEFAULTS = {
@@ -32,6 +35,7 @@ interface FileInfo {
 }
 
 function App() {
+  const [showDemo, setShowDemo] = useState(false);
   const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
   const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
   const [ipfsCid, setIpfsCid] = useState("");
@@ -46,6 +50,38 @@ function App() {
   const [account, setAccount] = useState<string>("");
   const [fileHash, setFileHash] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
+
+  // Show Shamir's Secret Sharing demo
+  if (showDemo) {
+    return (
+      <div style={{ minHeight: '100vh' }}>
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 1000
+        }}>
+          <button
+            onClick={() => setShowDemo(false)}
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}
+          >
+            ← Back to Main App
+          </button>
+        </div>
+        <ShamirDemoEnhanced />
+      </div>
+    );
+  }
 
   // Connect Wallet
   const handleConnectWallet = async () => {
@@ -242,23 +278,50 @@ function App() {
         transition={{ duration: 0.6 }}
         style={styles.header}
       >
-        <div style={styles.logoContainer}>
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <path
-              d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
-              stroke="var(--accent-primary)"
-              strokeWidth="2.5"
-              fill="none"
-            />
-            <path
-              d="M16 24L20 28L32 16"
-              stroke="var(--accent-secondary)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <h1 style={styles.title}>EternLink</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={styles.logoContainer}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <path
+                d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
+                stroke="var(--accent-primary)"
+                strokeWidth="2.5"
+                fill="none"
+              />
+              <path
+                d="M16 24L20 28L32 16"
+                stroke="var(--accent-secondary)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <h1 style={styles.title}>EternLink</h1>
+          </div>
+          <button
+            onClick={() => setShowDemo(true)}
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--accent-secondary)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--accent-primary)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            🔐 Try Shamir Demo
+          </button>
         </div>
 <<<<<<< HEAD
 <<<<<<< HEAD

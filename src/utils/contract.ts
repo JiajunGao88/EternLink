@@ -6,12 +6,50 @@ import { ethers } from "ethers";
 // 合约 ABI
 export const POE_ABI = [
   {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+      { "indexed": true, "internalType": "bytes32", "name": "fileHash", "type": "bytes32" },
+      { "indexed": false, "internalType": "string", "name": "cipher", "type": "string" },
+      { "indexed": false, "internalType": "string", "name": "cid", "type": "string" },
+      { "indexed": false, "internalType": "uint256", "name": "size", "type": "uint256" },
+      { "indexed": false, "internalType": "string", "name": "mime", "type": "string" },
+      { "indexed": false, "internalType": "uint256", "name": "heartbeatInterval", "type": "uint256" },
+      { "indexed": false, "internalType": "address[]", "name": "beneficiaries", "type": "address[]" }
+    ],
+    "name": "FileRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "fileHash", "type": "bytes32" },
+      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "name": "HeartbeatUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "fileHash", "type": "bytes32" },
+      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+      { "indexed": false, "internalType": "address[]", "name": "beneficiaries", "type": "address[]" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "name": "RecoveryTriggered",
+    "type": "event"
+  },
+  {
     "inputs": [
       { "internalType": "bytes32", "name": "fileHash", "type": "bytes32" },
       { "internalType": "string", "name": "cipher", "type": "string" },
       { "internalType": "string", "name": "cid", "type": "string" },
       { "internalType": "uint256", "name": "size", "type": "uint256" },
-      { "internalType": "string", "name": "mime", "type": "string" }
+      { "internalType": "string", "name": "mime", "type": "string" },
+      { "internalType": "uint256", "name": "heartbeatInterval", "type": "uint256" },
+      { "internalType": "address[]", "name": "beneficiaries", "type": "address[]" }
     ],
     "name": "register",
     "outputs": [],
@@ -26,17 +64,25 @@ export const POE_ABI = [
     "type": "function"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
-      { "indexed": true, "internalType": "bytes32", "name": "fileHash", "type": "bytes32" },
-      { "indexed": false, "internalType": "string", "name": "cipher", "type": "string" },
-      { "indexed": false, "internalType": "string", "name": "cid", "type": "string" },
-      { "indexed": false, "internalType": "uint256", "name": "size", "type": "uint256" },
-      { "indexed": false, "internalType": "string", "name": "mime", "type": "string" }
-    ],
-    "name": "FileRegistered",
-    "type": "event"
+    "inputs": [{ "internalType": "bytes32", "name": "fileHash", "type": "bytes32" }],
+    "name": "checkTimeout",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "bytes32", "name": "fileHash", "type": "bytes32" }],
+    "name": "heartbeat",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "bytes32", "name": "fileHash", "type": "bytes32" }],
+    "name": "triggerRecovery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ];
 
@@ -102,9 +148,40 @@ export async function registerFile(
   cipher: string,
   cid: string,
   size: number,
-  mime: string
+  mime: string,
+  heartbeatInterval: number,
+  beneficiaries: string[]
 ): Promise<ethers.ContractTransactionResponse> {
-  return await contract.register(fileHash, cipher, cid, size, mime);
+  return await contract.register(
+    fileHash,
+    cipher,
+    cid,
+    size,
+    mime,
+    heartbeatInterval,
+    beneficiaries
+  );
+}
+
+export async function sendHeartbeat(
+  contract: ethers.Contract,
+  fileHash: string
+): Promise<ethers.ContractTransactionResponse> {
+  return await contract.heartbeat(fileHash);
+}
+
+export async function checkTimeout(
+  contract: ethers.Contract,
+  fileHash: string
+): Promise<boolean> {
+  return await contract.checkTimeout(fileHash);
+}
+
+export async function triggerRecovery(
+  contract: ethers.Contract,
+  fileHash: string
+): Promise<ethers.ContractTransactionResponse> {
+  return await contract.triggerRecovery(fileHash);
 }
 
 /**

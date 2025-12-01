@@ -2,74 +2,123 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title ProofOfExistence
- * @dev 文件存在性证明智能合约
- * 
- * 功能:
- * - 登记文件的 SHA-256 哈希到区块链
- * - 验证文件是否已登记
- * - 记录文件的元数据（加密方式、IPFS CID、大小、MIME类型）
- * 
- * 注意:
- * - 链上只存储文件哈希，不存储文件内容
- * - 文件内容应在链下加密存储（本地或 IPFS）
- * - 任何人都可以验证文件是否存在
+ * @title ProofOfExistence with Dead Man's Switch
+ * @dev 文件存在性证明 + 心跳检测 + 继承人触发
  */
 contract ProofOfExistence {
-    /**
-     * @dev 文件登记事件
-     * @param owner 文件所有者地址
-     * @param fileHash 文件的 SHA-256 哈希
-     * @param cipher 加密方式描述
-     * @param cid IPFS CID（可选）
-     * @param size 文件大小（字节）
-     * @param mime MIME 类型
-     */
+    struct FileRecord {
+        address owner;
+        bytes32 fileHash;
+        string cipher;
+        string cid;
+        uint256 size;
+        string mime;
+        uint256 registeredAt;
+        uint256 lastHeartbeat;
+        uint256 heartbeatInterval;
+        address[] beneficiaries;
+        bool recoveryTriggered;
+    }
+
+    mapping(bytes32 => FileRecord) public files;
+    mapping(address => bytes32[]) public userFiles;
+
     event FileRegistered(
         address indexed owner,
         bytes32 indexed fileHash,
-        string  cipher,   // 例如 "AES-256-GCM+PBKDF2(250k, SHA-256)"
-        string  cid,      // 可选：加密文件的 IPFS CID（MVP可以先留空）
+        string cipher,
+        string cid,
         uint256 size,
-        string  mime
+        string mime,
+        uint256 heartbeatInterval,
+        address[] beneficiaries
     );
 
-    /**
-     * @dev 文件哈希到所有者的映射
-     * fileHash => owner address
-     */
-    mapping(bytes32 => address) public ownerOf;
+    event HeartbeatUpdated(
+        bytes32 indexed fileHash,
+        address indexed owner,
+        uint256 timestamp
+    );
 
-    /**
-     * @dev 登记文件哈希
-     * @param fileHash 文件的 SHA-256 哈希
-     * @param cipher 加密方式描述
-     * @param cid IPFS CID（可选，如果为空字符串则忽略）
-     * @param size 文件大小（字节）
-     * @param mime MIME 类型
-     * 
-     * 要求:
-     * - 文件哈希必须未被登记过
-     * - 调用者必须拥有足够的 gas
-     */
+    event RecoveryTriggered(
+        bytes32 indexed fileHash,
+        address indexed owner,
+        address[] beneficiaries,
+        uint256 timestamp
+    );
+
     function register(
         bytes32 fileHash,
         string calldata cipher,
         string calldata cid,
         uint256 size,
-        string calldata mime
+        string calldata mime,
+        uint256 heartbeatInterval,
+        address[] calldata beneficiaries
     ) external {
-        require(ownerOf[fileHash] == address(0), "already registered");
-        ownerOf[fileHash] = msg.sender;
-        emit FileRegistered(msg.sender, fileHash, cipher, cid, size, mime);
+        require(files[fileHash].owner == address(0), "already registered");
+        require(beneficiaries.length > 0, "beneficiaries required");
+        require(heartbeatInterval > 0, "interval required");
+
+        files[fileHash] = FileRecord({
+            owner: msg.sender,
+            fileHash: fileHash,
+            cipher: cipher,
+            cid: cid,
+            size: size,
+            mime: mime,
+            registeredAt: block.timestamp,
+            lastHeartbeat: block.timestamp,
+            heartbeatInterval: heartbeatInterval,
+            beneficiaries: beneficiaries,
+            recoveryTriggered: false
+        });
+
+        userFiles[msg.sender].push(fileHash);
+        emit FileRegistered(
+            msg.sender,
+            fileHash,
+            cipher,
+            cid,
+            size,
+            mime,
+            heartbeatInterval,
+            beneficiaries
+        );
     }
 
-    /**
-     * @dev 检查文件是否已登记
-     * @param fileHash 文件的 SHA-256 哈希
-     * @return 如果文件已登记返回 true，否则返回 false
-     */
+    function heartbeat(bytes32 fileHash) external {
+        require(files[fileHash].owner == msg.sender, "not owner");
+        files[fileHash].lastHeartbeat = block.timestamp;
+        emit HeartbeatUpdated(fileHash, msg.sender, block.timestamp);
+    }
+
+    function checkTimeout(bytes32 fileHash) public view returns (bool) {
+        FileRecord memory record = files[fileHash];
+        if (record.owner == address(0)) {
+            return false;
+        }
+
+        uint256 elapsed = block.timestamp - record.lastHeartbeat;
+        return elapsed > record.heartbeatInterval;
+    }
+
+    function triggerRecovery(bytes32 fileHash) external {
+        FileRecord storage record = files[fileHash];
+        require(record.owner != address(0), "not found");
+        require(!record.recoveryTriggered, "already triggered");
+        require(checkTimeout(fileHash), "not timed out");
+
+        record.recoveryTriggered = true;
+        emit RecoveryTriggered(
+            fileHash,
+            record.owner,
+            record.beneficiaries,
+            block.timestamp
+        );
+    }
+
     function exists(bytes32 fileHash) external view returns (bool) {
-        return ownerOf[fileHash] != address(0);
+        return files[fileHash].owner != address(0);
     }
 }

@@ -15,6 +15,22 @@ import {
   registerFile,
   checkFileExists,
 } from "./utils/contract";
+import { splitPassword } from "./utils/shamir";
+
+interface Beneficiary {
+  id: string;
+  name: string;
+  email: string;
+  address: string;
+  relationship: string;
+}
+
+interface ShareBundle {
+  shareOne: string;
+  shareTwo: string;
+  shareThree: string;
+  storageKey: string;
+}
 
 // Default Configuration
 const DEFAULTS = {
@@ -45,6 +61,17 @@ function App() {
   const [account, setAccount] = useState<string>("");
   const [fileHash, setFileHash] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
+  const [shares, setShares] = useState<ShareBundle | null>(null);
+  const [heartbeatInterval, setHeartbeatInterval] = useState<number>(60);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([
+    {
+      id: crypto.randomUUID ? crypto.randomUUID() : "beneficiary-1",
+      name: "",
+      email: "",
+      address: "",
+      relationship: "",
+    },
+  ]);
 
   // Connect Wallet
   const handleConnectWallet = async () => {
@@ -77,10 +104,64 @@ function App() {
     }
   };
 
+  const createEmptyBeneficiary = (): Beneficiary => ({
+    id: crypto.randomUUID ? crypto.randomUUID() : `beneficiary-${Date.now()}`,
+    name: "",
+    email: "",
+    address: "",
+    relationship: "",
+  });
+
+  const handleAddBeneficiary = () => {
+    setBeneficiaries((prev) => [...prev, createEmptyBeneficiary()]);
+  };
+
+  const handleBeneficiaryChange = (
+    id: string,
+    field: keyof Omit<Beneficiary, "id">,
+    value: string
+  ) => {
+    setBeneficiaries((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, [field]: value } : b))
+    );
+  };
+
+  const handleRemoveBeneficiary = (id: string) => {
+    setBeneficiaries((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  const downloadShare = (label: string, content: string) => {
+    const blob = new Blob([content], { type: "text/plain" });
+    downloadFile(blob, `${label}.txt`);
+    setStatus({
+      type: "success",
+      message: `${label} saved as text file for offline storage`,
+    });
+  };
+
+  const copyShare = async (content: string) => {
+    try {
+      if (!navigator.clipboard) {
+        throw new Error("Clipboard API unavailable in this environment");
+      }
+      await navigator.clipboard.writeText(content);
+      setStatus({ type: "success", message: "Secret share copied to clipboard" });
+    } catch (error: any) {
+      setStatus({
+        type: "error",
+        message: error.message || "Failed to copy share",
+      });
+    }
+  };
+
   // Handle File Selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
+
+    setShares(null);
+    setFileHash("");
+    setTxHash("");
 
     // Only allow .txt files
     if (!selectedFile.name.endsWith(".txt")) {
@@ -119,6 +200,18 @@ function App() {
       setStatus({ type: "error", message: "Please configure the contract address" });
       return;
     }
+    const beneficiaryAddresses = beneficiaries
+      .map((b) => b.address.trim())
+      .filter((addr) => addr.length > 0);
+
+    if (beneficiaryAddresses.length === 0) {
+      setStatus({ type: "error", message: "Please add at least one beneficiary address" });
+      return;
+    }
+    if (!heartbeatInterval || heartbeatInterval <= 0) {
+      setStatus({ type: "error", message: "Please choose a heartbeat interval" });
+      return;
+    }
 
     setLoading(true);
     setStatus(null);
@@ -130,17 +223,37 @@ function App() {
       setFileHash(hashHex);
       setStatus({ type: "info", message: "File hash calculated" });
 
-      // 2. Encrypt file
+      // 2. Split password into secret shares
+      const [shareOne, shareTwo, shareThree] = splitPassword(password);
+      const storageKey = `eternlink:share1:${hashHex}`;
+      try {
+        localStorage.setItem(storageKey, shareOne);
+      } catch (error) {
+        console.warn("Failed to persist share one", error);
+      }
+
+      setShares({
+        shareOne,
+        shareTwo,
+        shareThree,
+        storageKey,
+      });
+      setStatus({
+        type: "info",
+        message: "Secret shares generated. Share 1 saved locally for the owner.",
+      });
+
+      // 3. Encrypt file
       const { encrypted, iv, salt } = await encryptFile(fileInfo.content, password);
       setStatus({ type: "info", message: "File encryption completed" });
 
-      // 3. Pack and download encrypted file
-      const encryptedBlob = packEncryptedFile(encrypted, iv, salt);
+      // 4. Pack and download encrypted file with Share 3 metadata
+      const encryptedBlob = packEncryptedFile(encrypted, iv, salt, shareThree);
       const encryptedFileName = fileInfo.name + ".enc";
       downloadFile(encryptedBlob, encryptedFileName);
       setStatus({ type: "info", message: "Encrypted file downloaded" });
 
-      // 4. Connect wallet and submit to blockchain
+      // 5. Connect wallet and submit to blockchain
       const provider = await connectWallet();
       const isCorrectNetwork = await checkNetwork(provider, chainId);
       if (!isCorrectNetwork) {
@@ -151,7 +264,7 @@ function App() {
       const signer = await provider.getSigner();
       const contractWithSigner = contract.connect(signer) as any;
 
-      // 5. Register on contract
+      // 6. Register on contract
       setStatus({ type: "info", message: "Submitting transaction to blockchain..." });
       const tx = await registerFile(
         contractWithSigner,
@@ -159,7 +272,9 @@ function App() {
         DEFAULTS.CIPHER,
         ipfsCid || "",
         fileInfo.size,
-        fileInfo.type
+        fileInfo.type,
+        heartbeatInterval * 24 * 60 * 60,
+        beneficiaryAddresses
       );
 
       setTxHash(tx.hash);
@@ -168,7 +283,7 @@ function App() {
         message: `Transaction submitted: ${tx.hash}`,
       });
 
-      // 6. Wait for confirmation
+      // 7. Wait for confirmation
       await tx.wait();
       setStatus({
         type: "success",
@@ -337,6 +452,110 @@ function App() {
             </div>
           </div>
 
+          <div style={styles.card}>
+            <h3 style={styles.cardTitle}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                <path d="M4 8C4 5.79086 5.79086 4 8 4H12C14.2091 4 16 5.79086 16 8V12C16 14.2091 14.2091 16 12 16H8C5.79086 16 4 14.2091 4 12V8Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
+                <path d="M8.5 9.5L10 11L13.5 7.5" stroke="var(--accent-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              Recovery & Beneficiaries
+            </h3>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Heartbeat Interval</label>
+              <div style={styles.intervalGrid}>
+                {[30, 60, 90, 180].map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => setHeartbeatInterval(days)}
+                    style={{
+                      ...styles.intervalButton,
+                      ...(heartbeatInterval === days ? styles.intervalButtonActive : {}),
+                    }}
+                  >
+                    {days} days
+                  </button>
+                ))}
+              </div>
+              <span style={styles.hint}>
+                The heartbeat interval controls when Share 3 is released after inactivity.
+              </span>
+            </div>
+
+            <div style={styles.beneficiaryHeader}>
+              <div>
+                <p style={styles.label}>Beneficiaries</p>
+                <span style={styles.hint}>Add trusted wallets for recovery notifications</span>
+              </div>
+              <button type="button" onClick={handleAddBeneficiary} style={styles.tertiaryButton}>
+                + Add Beneficiary
+              </button>
+            </div>
+
+            <div style={styles.beneficiaryList}>
+              {beneficiaries.map((beneficiary, index) => (
+                <div key={beneficiary.id} style={styles.beneficiaryCard}>
+                  <div style={styles.beneficiaryHeaderRow}>
+                    <span style={styles.beneficiaryBadge}>Beneficiary {index + 1}</span>
+                    {beneficiaries.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBeneficiary(beneficiary.id)}
+                        style={styles.removeButton}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={styles.beneficiaryGrid}>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Wallet Address</label>
+                      <input
+                        type="text"
+                        value={beneficiary.address}
+                        onChange={(e) => handleBeneficiaryChange(beneficiary.id, "address", e.target.value)}
+                        placeholder="0x..."
+                        style={styles.input}
+                      />
+                    </div>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Name</label>
+                      <input
+                        type="text"
+                        value={beneficiary.name}
+                        onChange={(e) => handleBeneficiaryChange(beneficiary.id, "name", e.target.value)}
+                        placeholder="Alice"
+                        style={styles.input}
+                      />
+                    </div>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Email</label>
+                      <input
+                        type="email"
+                        value={beneficiary.email}
+                        onChange={(e) => handleBeneficiaryChange(beneficiary.id, "email", e.target.value)}
+                        placeholder="alice@example.com"
+                        style={styles.input}
+                      />
+                    </div>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Relationship</label>
+                      <input
+                        type="text"
+                        value={beneficiary.relationship}
+                        onChange={(e) => handleBeneficiaryChange(beneficiary.id, "relationship", e.target.value)}
+                        placeholder="Family / Partner / Trustee"
+                        style={styles.input}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Info Card */}
           <div style={{...styles.card, ...styles.infoCard}}>
             <h4 style={styles.infoCardTitle}>How to Use</h4>
@@ -481,6 +700,67 @@ function App() {
                 )}
                 <span>{status.message}</span>
               </motion.div>
+            )}
+
+            {shares && (
+              <div style={styles.shareGrid}>
+                <div style={styles.shareCard}>
+                  <div style={styles.shareHeader}>
+                    <span style={styles.shareTitle}>Share 1 · Owner copy</span>
+                    <span style={styles.tag}>Local only</span>
+                  </div>
+                  <p style={styles.shareDescription}>
+                    Stored in your browser at <code style={styles.code}>{shares.storageKey}</code>. Keep a second offline backup.
+                  </p>
+                  <div style={styles.shareActions}>
+                    <button type="button" style={styles.tertiaryButton} onClick={() => copyShare(shares.shareOne)}>
+                      Copy Share 1
+                    </button>
+                    <button type="button" style={styles.secondaryTertiaryButton} onClick={() => downloadShare("share-1-owner", shares.shareOne)}>
+                      Download Share 1
+                    </button>
+                  </div>
+                  <code style={styles.shareCode}>{shares.shareOne}</code>
+                </div>
+
+                <div style={styles.shareCard}>
+                  <div style={styles.shareHeader}>
+                    <span style={styles.shareTitle}>Share 2 · Beneficiary</span>
+                    <span style={styles.tag}>Offline delivery</span>
+                  </div>
+                  <p style={styles.shareDescription}>
+                    Print or pass this share securely to your beneficiary. Combine with Share 3 after the heartbeat timeout.
+                  </p>
+                  <div style={styles.shareActions}>
+                    <button type="button" style={styles.tertiaryButton} onClick={() => copyShare(shares.shareTwo)}>
+                      Copy Share 2
+                    </button>
+                    <button type="button" style={styles.secondaryTertiaryButton} onClick={() => downloadShare("share-2-beneficiary", shares.shareTwo)}>
+                      Download Share 2
+                    </button>
+                  </div>
+                  <code style={styles.shareCode}>{shares.shareTwo}</code>
+                </div>
+
+                <div style={styles.shareCard}>
+                  <div style={styles.shareHeader}>
+                    <span style={styles.shareTitle}>Share 3 · Platform release</span>
+                    <span style={styles.tag}>Embedded</span>
+                  </div>
+                  <p style={styles.shareDescription}>
+                    Included inside the .enc header to match the on-chain heartbeat schedule. Provide this plus Share 2 to recover.
+                  </p>
+                  <div style={styles.shareActions}>
+                    <button type="button" style={styles.tertiaryButton} onClick={() => copyShare(shares.shareThree)}>
+                      Copy Share 3
+                    </button>
+                    <button type="button" style={styles.secondaryTertiaryButton} onClick={() => downloadShare("share-3-platform", shares.shareThree)}>
+                      Download Share 3
+                    </button>
+                  </div>
+                  <code style={styles.shareCode}>{shares.shareThree}</code>
+                </div>
+              </div>
             )}
 
             {/* Transaction Info */}
@@ -664,6 +944,26 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: 'var(--shadow-sm)',
   },
 
+  tertiaryButton: {
+    padding: '10px 14px',
+    background: 'rgba(139, 157, 195, 0.12)',
+    border: '1px solid rgba(139, 157, 195, 0.3)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+
+  secondaryTertiaryButton: {
+    padding: '10px 14px',
+    background: 'rgba(59, 130, 246, 0.12)',
+    border: '1px solid rgba(59, 130, 246, 0.3)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--accent-primary)',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+
   connectedWallet: {
     padding: '14px 20px',
     background: 'rgba(16, 185, 129, 0.1)',
@@ -696,6 +996,81 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: '1.8',
     paddingLeft: '20px',
     margin: 0,
+  },
+
+  intervalGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    gap: '8px',
+    marginTop: 'var(--spacing-sm)',
+  },
+
+  intervalButton: {
+    padding: '10px 12px',
+    borderRadius: 'var(--radius-md)',
+    border: '1px solid var(--input-border)',
+    background: 'var(--input-bg)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+
+  intervalButtonActive: {
+    borderColor: 'var(--accent-primary)',
+    background: 'rgba(59, 130, 246, 0.1)',
+    color: 'var(--accent-primary)',
+  },
+
+  beneficiaryHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 'var(--spacing-lg)',
+    marginBottom: 'var(--spacing-sm)',
+  },
+
+  beneficiaryList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 'var(--spacing-md)',
+  },
+
+  beneficiaryCard: {
+    border: '1px solid var(--input-border)',
+    borderRadius: 'var(--radius-md)',
+    padding: 'var(--spacing-md)',
+    background: 'var(--input-bg)',
+  },
+
+  beneficiaryHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 'var(--spacing-sm)',
+  },
+
+  beneficiaryBadge: {
+    display: 'inline-block',
+    padding: '6px 10px',
+    background: 'rgba(59, 130, 246, 0.08)',
+    color: 'var(--accent-primary)',
+    borderRadius: 'var(--radius-sm)',
+    fontWeight: 700,
+    fontSize: '0.85rem',
+  },
+
+  beneficiaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: 'var(--spacing-md)',
+  },
+
+  removeButton: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--error)',
+    cursor: 'pointer',
+    fontWeight: 600,
   },
 
   uploadArea: {
@@ -796,6 +1171,67 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'rgba(59, 130, 246, 0.1)',
     border: '1px solid rgba(59, 130, 246, 0.3)',
     color: 'var(--info)',
+  },
+
+  shareGrid: {
+    marginTop: 'var(--spacing-lg)',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: 'var(--spacing-md)',
+  },
+
+  shareCard: {
+    padding: 'var(--spacing-md)',
+    border: '1px solid var(--input-border)',
+    borderRadius: 'var(--radius-md)',
+    background: 'var(--input-bg)',
+  },
+
+  shareHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 'var(--spacing-xs)',
+  },
+
+  shareTitle: {
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+  },
+
+  shareDescription: {
+    color: 'var(--text-secondary)',
+    fontSize: '0.9rem',
+    marginTop: 0,
+  },
+
+  shareActions: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap' as const,
+    margin: '8px 0',
+  },
+
+  shareCode: {
+    display: 'block',
+    marginTop: '8px',
+    fontFamily: 'monospace',
+    fontSize: '0.8rem',
+    wordBreak: 'break-all' as const,
+    color: 'var(--accent-secondary)',
+  },
+
+  tag: {
+    padding: '4px 8px',
+    borderRadius: 'var(--radius-sm)',
+    background: 'rgba(16, 185, 129, 0.12)',
+    color: 'var(--success)',
+    fontWeight: 700,
+    fontSize: '0.75rem',
+  },
+
+  code: {
+    fontFamily: 'monospace',
   },
 
   txInfo: {

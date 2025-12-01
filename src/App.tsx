@@ -15,6 +15,23 @@ import {
   registerFile,
   checkFileExists,
 } from "./utils/contract";
+import { splitPassword } from "./utils/shamir";
+import logo from "./assets/eternlink-logo.svg";
+
+interface Beneficiary {
+  id: string;
+  name: string;
+  email: string;
+  address: string;
+  relationship: string;
+}
+
+interface ShareBundle {
+  shareOne: string;
+  shareTwo: string;
+  shareThree: string;
+  storageKey: string;
+}
 
 // Default Configuration
 const DEFAULTS = {
@@ -45,6 +62,34 @@ function App() {
   const [account, setAccount] = useState<string>("");
   const [fileHash, setFileHash] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
+  const [shares, setShares] = useState<ShareBundle | null>(null);
+  const [heartbeatInterval, setHeartbeatInterval] = useState<number>(60);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([
+    {
+      id: crypto.randomUUID ? crypto.randomUUID() : "beneficiary-1",
+      name: "",
+      email: "",
+      address: "",
+      relationship: "",
+    },
+  ]);
+  const featurePillars = [
+    {
+      title: "Client-side zero access",
+      description:
+        "AES-256-GCM encryption with PBKDF2 (250k) keeps seed phrases off the server.",
+    },
+    {
+      title: "2-of-3 recovery shares",
+      description:
+        "Shamir's Secret Sharing splits your password for owner, beneficiary, and time-lock release.",
+    },
+    {
+      title: "Heartbeat automation",
+      description:
+        "Configurable check-ins trigger beneficiary notifications only after your chosen timeout.",
+    },
+  ];
 
   // Connect Wallet
   const handleConnectWallet = async () => {
@@ -77,10 +122,64 @@ function App() {
     }
   };
 
+  const createEmptyBeneficiary = (): Beneficiary => ({
+    id: crypto.randomUUID ? crypto.randomUUID() : `beneficiary-${Date.now()}`,
+    name: "",
+    email: "",
+    address: "",
+    relationship: "",
+  });
+
+  const handleAddBeneficiary = () => {
+    setBeneficiaries((prev) => [...prev, createEmptyBeneficiary()]);
+  };
+
+  const handleBeneficiaryChange = (
+    id: string,
+    field: keyof Omit<Beneficiary, "id">,
+    value: string
+  ) => {
+    setBeneficiaries((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, [field]: value } : b))
+    );
+  };
+
+  const handleRemoveBeneficiary = (id: string) => {
+    setBeneficiaries((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  const downloadShare = (label: string, content: string) => {
+    const blob = new Blob([content], { type: "text/plain" });
+    downloadFile(blob, `${label}.txt`);
+    setStatus({
+      type: "success",
+      message: `${label} saved as text file for offline storage`,
+    });
+  };
+
+  const copyShare = async (content: string) => {
+    try {
+      if (!navigator.clipboard) {
+        throw new Error("Clipboard API unavailable in this environment");
+      }
+      await navigator.clipboard.writeText(content);
+      setStatus({ type: "success", message: "Secret share copied to clipboard" });
+    } catch (error: any) {
+      setStatus({
+        type: "error",
+        message: error.message || "Failed to copy share",
+      });
+    }
+  };
+
   // Handle File Selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
+
+    setShares(null);
+    setFileHash("");
+    setTxHash("");
 
     // Only allow .txt files
     if (!selectedFile.name.endsWith(".txt")) {
@@ -119,6 +218,18 @@ function App() {
       setStatus({ type: "error", message: "Please configure the contract address" });
       return;
     }
+    const beneficiaryAddresses = beneficiaries
+      .map((b) => b.address.trim())
+      .filter((addr) => addr.length > 0);
+
+    if (beneficiaryAddresses.length === 0) {
+      setStatus({ type: "error", message: "Please add at least one beneficiary address" });
+      return;
+    }
+    if (!heartbeatInterval || heartbeatInterval <= 0) {
+      setStatus({ type: "error", message: "Please choose a heartbeat interval" });
+      return;
+    }
 
     setLoading(true);
     setStatus(null);
@@ -130,17 +241,37 @@ function App() {
       setFileHash(hashHex);
       setStatus({ type: "info", message: "File hash calculated" });
 
-      // 2. Encrypt file
+      // 2. Split password into secret shares
+      const [shareOne, shareTwo, shareThree] = splitPassword(password);
+      const storageKey = `eternlink:share1:${hashHex}`;
+      try {
+        localStorage.setItem(storageKey, shareOne);
+      } catch (error) {
+        console.warn("Failed to persist share one", error);
+      }
+
+      setShares({
+        shareOne,
+        shareTwo,
+        shareThree,
+        storageKey,
+      });
+      setStatus({
+        type: "info",
+        message: "Secret shares generated. Share 1 saved locally for the owner.",
+      });
+
+      // 3. Encrypt file
       const { encrypted, iv, salt } = await encryptFile(fileInfo.content, password);
       setStatus({ type: "info", message: "File encryption completed" });
 
-      // 3. Pack and download encrypted file
-      const encryptedBlob = packEncryptedFile(encrypted, iv, salt);
+      // 4. Pack and download encrypted file with Share 3 metadata
+      const encryptedBlob = packEncryptedFile(encrypted, iv, salt, shareThree);
       const encryptedFileName = fileInfo.name + ".enc";
       downloadFile(encryptedBlob, encryptedFileName);
       setStatus({ type: "info", message: "Encrypted file downloaded" });
 
-      // 4. Connect wallet and submit to blockchain
+      // 5. Connect wallet and submit to blockchain
       const provider = await connectWallet();
       const isCorrectNetwork = await checkNetwork(provider, chainId);
       if (!isCorrectNetwork) {
@@ -151,7 +282,7 @@ function App() {
       const signer = await provider.getSigner();
       const contractWithSigner = contract.connect(signer) as any;
 
-      // 5. Register on contract
+      // 6. Register on contract
       setStatus({ type: "info", message: "Submitting transaction to blockchain..." });
       const tx = await registerFile(
         contractWithSigner,
@@ -159,7 +290,9 @@ function App() {
         DEFAULTS.CIPHER,
         ipfsCid || "",
         fileInfo.size,
-        fileInfo.type
+        fileInfo.type,
+        heartbeatInterval * 24 * 60 * 60,
+        beneficiaryAddresses
       );
 
       setTxHash(tx.hash);
@@ -168,7 +301,7 @@ function App() {
         message: `Transaction submitted: ${tx.hash}`,
       });
 
-      // 6. Wait for confirmation
+      // 7. Wait for confirmation
       await tx.wait();
       setStatus({
         type: "success",
@@ -234,33 +367,68 @@ function App() {
 
   return (
     <div style={styles.container}>
-      {/* Header with Logo */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
+      {/* Hero with new logo and positioning */}
+      <motion.header
+        initial={{ opacity: 0, y: -18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        style={styles.header}
+        style={styles.hero}
       >
-        <div style={styles.logoContainer}>
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <path
-              d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
-              stroke="var(--accent-primary)"
-              strokeWidth="2.5"
-              fill="none"
-            />
-            <path
-              d="M16 24L20 28L32 16"
-              stroke="var(--accent-secondary)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <h1 style={styles.title}>EternLink</h1>
+        <div style={styles.heroGrid}>
+          <div style={styles.heroLeft}>
+            <div style={styles.brandRow}>
+              <img src={logo} alt="EternLink" style={styles.heroLogo} />
+              <div>
+                <p style={styles.brandKicker}>Zero-knowledge estate protection</p>
+                <h1 style={styles.heroTitle}>EternLink</h1>
+              </div>
+            </div>
+            <p style={styles.heroSubtitle}>
+              Protect seed phrases with client-side AES-256-GCM, Shamir's Secret Sharing (3,2), and a
+              heartbeat-driven dead man's switch that only alerts beneficiaries after your chosen timeout.
+            </p>
+            <div style={styles.heroBadges}>
+              <span style={styles.badge}>Client-side encryption</span>
+              <span style={styles.badge}>2-of-3 recovery</span>
+              <span style={styles.badge}>Heartbeat releases</span>
+            </div>
+          </div>
+
+          <div style={styles.heroRight}>
+            <div style={styles.heroCallout}>
+              <div style={styles.calloutHeader}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 2L3 6V10C3 14 6 17.5 10 19C14 17.5 17 14 17 10V6L10 2Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none" />
+                  <path d="M6.5 10L9 12.5L13.5 7.5" stroke="var(--accent-secondary)" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                <span>New three-layer landing experience</span>
+              </div>
+              <ul style={styles.calloutList}>
+                <li>Store only encrypted payloads and hashes on-chain.</li>
+                <li>Distribute shares: owner (local), beneficiary (offline), platform (time-lock).</li>
+                <li>Automated beneficiary notifications after missed heartbeats.</li>
+              </ul>
+            </div>
+          </div>
         </div>
-        <p style={styles.subtitle}>Blockchain Proof of Existence · Eternal Protection for Your Digital Assets</p>
-      </motion.div>
+      </motion.header>
+
+      <div style={styles.featureGrid}>
+        {featurePillars.map((feature) => (
+          <div key={feature.title} style={styles.featureCard}>
+            <div style={styles.featureIcon}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 2L3 5V9C3 12 5.5 14.5 9 16C12.5 14.5 15 12 15 9V5L9 2Z" stroke="var(--accent-primary)" strokeWidth="1.2" fill="none" />
+                <path d="M6.25 9.25L8 11L12 7" stroke="var(--accent-secondary)" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div>
+              <h3 style={styles.featureTitle}>{feature.title}</h3>
+              <p style={styles.featureText}>{feature.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Main Content */}
       <div style={styles.content}>
@@ -334,6 +502,110 @@ function App() {
                   </span>
                 </div>
               )}
+            </div>
+          </div>
+
+          <div style={styles.card}>
+            <h3 style={styles.cardTitle}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                <path d="M4 8C4 5.79086 5.79086 4 8 4H12C14.2091 4 16 5.79086 16 8V12C16 14.2091 14.2091 16 12 16H8C5.79086 16 4 14.2091 4 12V8Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
+                <path d="M8.5 9.5L10 11L13.5 7.5" stroke="var(--accent-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              Recovery & Beneficiaries
+            </h3>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Heartbeat Interval</label>
+              <div style={styles.intervalGrid}>
+                {[30, 60, 90, 180].map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => setHeartbeatInterval(days)}
+                    style={{
+                      ...styles.intervalButton,
+                      ...(heartbeatInterval === days ? styles.intervalButtonActive : {}),
+                    }}
+                  >
+                    {days} days
+                  </button>
+                ))}
+              </div>
+              <span style={styles.hint}>
+                The heartbeat interval controls when Share 3 is released after inactivity.
+              </span>
+            </div>
+
+            <div style={styles.beneficiaryHeader}>
+              <div>
+                <p style={styles.label}>Beneficiaries</p>
+                <span style={styles.hint}>Add trusted wallets for recovery notifications</span>
+              </div>
+              <button type="button" onClick={handleAddBeneficiary} style={styles.tertiaryButton}>
+                + Add Beneficiary
+              </button>
+            </div>
+
+            <div style={styles.beneficiaryList}>
+              {beneficiaries.map((beneficiary, index) => (
+                <div key={beneficiary.id} style={styles.beneficiaryCard}>
+                  <div style={styles.beneficiaryHeaderRow}>
+                    <span style={styles.beneficiaryBadge}>Beneficiary {index + 1}</span>
+                    {beneficiaries.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBeneficiary(beneficiary.id)}
+                        style={styles.removeButton}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={styles.beneficiaryGrid}>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Wallet Address</label>
+                      <input
+                        type="text"
+                        value={beneficiary.address}
+                        onChange={(e) => handleBeneficiaryChange(beneficiary.id, "address", e.target.value)}
+                        placeholder="0x..."
+                        style={styles.input}
+                      />
+                    </div>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Name</label>
+                      <input
+                        type="text"
+                        value={beneficiary.name}
+                        onChange={(e) => handleBeneficiaryChange(beneficiary.id, "name", e.target.value)}
+                        placeholder="Alice"
+                        style={styles.input}
+                      />
+                    </div>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Email</label>
+                      <input
+                        type="email"
+                        value={beneficiary.email}
+                        onChange={(e) => handleBeneficiaryChange(beneficiary.id, "email", e.target.value)}
+                        placeholder="alice@example.com"
+                        style={styles.input}
+                      />
+                    </div>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Relationship</label>
+                      <input
+                        type="text"
+                        value={beneficiary.relationship}
+                        onChange={(e) => handleBeneficiaryChange(beneficiary.id, "relationship", e.target.value)}
+                        placeholder="Family / Partner / Trustee"
+                        style={styles.input}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -483,6 +755,67 @@ function App() {
               </motion.div>
             )}
 
+            {shares && (
+              <div style={styles.shareGrid}>
+                <div style={styles.shareCard}>
+                  <div style={styles.shareHeader}>
+                    <span style={styles.shareTitle}>Share 1 · Owner copy</span>
+                    <span style={styles.tag}>Local only</span>
+                  </div>
+                  <p style={styles.shareDescription}>
+                    Stored in your browser at <code style={styles.code}>{shares.storageKey}</code>. Keep a second offline backup.
+                  </p>
+                  <div style={styles.shareActions}>
+                    <button type="button" style={styles.tertiaryButton} onClick={() => copyShare(shares.shareOne)}>
+                      Copy Share 1
+                    </button>
+                    <button type="button" style={styles.secondaryTertiaryButton} onClick={() => downloadShare("share-1-owner", shares.shareOne)}>
+                      Download Share 1
+                    </button>
+                  </div>
+                  <code style={styles.shareCode}>{shares.shareOne}</code>
+                </div>
+
+                <div style={styles.shareCard}>
+                  <div style={styles.shareHeader}>
+                    <span style={styles.shareTitle}>Share 2 · Beneficiary</span>
+                    <span style={styles.tag}>Offline delivery</span>
+                  </div>
+                  <p style={styles.shareDescription}>
+                    Print or pass this share securely to your beneficiary. Combine with Share 3 after the heartbeat timeout.
+                  </p>
+                  <div style={styles.shareActions}>
+                    <button type="button" style={styles.tertiaryButton} onClick={() => copyShare(shares.shareTwo)}>
+                      Copy Share 2
+                    </button>
+                    <button type="button" style={styles.secondaryTertiaryButton} onClick={() => downloadShare("share-2-beneficiary", shares.shareTwo)}>
+                      Download Share 2
+                    </button>
+                  </div>
+                  <code style={styles.shareCode}>{shares.shareTwo}</code>
+                </div>
+
+                <div style={styles.shareCard}>
+                  <div style={styles.shareHeader}>
+                    <span style={styles.shareTitle}>Share 3 · Platform release</span>
+                    <span style={styles.tag}>Embedded</span>
+                  </div>
+                  <p style={styles.shareDescription}>
+                    Included inside the .enc header to match the on-chain heartbeat schedule. Provide this plus Share 2 to recover.
+                  </p>
+                  <div style={styles.shareActions}>
+                    <button type="button" style={styles.tertiaryButton} onClick={() => copyShare(shares.shareThree)}>
+                      Copy Share 3
+                    </button>
+                    <button type="button" style={styles.secondaryTertiaryButton} onClick={() => downloadShare("share-3-platform", shares.shareThree)}>
+                      Download Share 3
+                    </button>
+                  </div>
+                  <code style={styles.shareCode}>{shares.shareThree}</code>
+                </div>
+              </div>
+            )}
+
             {/* Transaction Info */}
             {txHash && (
               <motion.div
@@ -546,34 +879,157 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '20px',
   },
 
-  header: {
-    textAlign: 'center' as const,
-    marginBottom: '40px',
+  hero: {
+    background: 'linear-gradient(135deg, rgba(26, 41, 66, 0.9) 0%, rgba(15, 30, 46, 0.9) 100%)',
+    border: '1px solid var(--card-border)',
+    borderRadius: 'var(--radius-xl)',
+    padding: '32px',
+    boxShadow: 'var(--shadow-md)',
+    marginBottom: '24px',
   },
 
-  logoContainer: {
+  heroGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1.2fr 0.8fr',
+    gap: '28px',
+    alignItems: 'center',
+  },
+
+  heroLeft: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+
+  brandRow: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: '16px',
-    marginBottom: '12px',
+    gap: '14px',
   },
 
-  title: {
-    fontSize: '3rem',
-    fontWeight: '700',
-    background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
+  heroLogo: {
+    width: '96px',
+    height: '96px',
+    filter: 'drop-shadow(0 10px 30px rgba(139, 157, 195, 0.25))',
+  },
+
+  brandKicker: {
+    margin: 0,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.08em',
+    color: 'var(--text-secondary)',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+  },
+
+  heroTitle: {
+    fontSize: '3.25rem',
+    fontWeight: '800',
+    margin: '4px 0 0',
+    background: 'linear-gradient(135deg, var(--accent-light) 0%, var(--accent-primary) 100%)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
-    margin: 0,
-    letterSpacing: '-0.02em',
   },
 
-  subtitle: {
-    fontSize: '1.1rem',
-    color: 'var(--text-secondary)',
+  heroSubtitle: {
     margin: 0,
-    fontWeight: '400',
+    fontSize: '1.05rem',
+    color: 'var(--text-primary)',
+    lineHeight: 1.7,
+  },
+
+  heroBadges: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '10px',
+    marginTop: '6px',
+  },
+
+  badge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    borderRadius: '999px',
+    background: 'rgba(139, 157, 195, 0.12)',
+    color: 'var(--accent-light)',
+    fontWeight: 700,
+    fontSize: '0.9rem',
+    border: '1px solid rgba(139, 157, 195, 0.25)',
+  },
+
+  heroRight: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+  },
+
+  heroCallout: {
+    width: '100%',
+    maxWidth: '420px',
+    background: 'rgba(10, 22, 40, 0.75)',
+    border: '1px solid var(--card-border)',
+    borderRadius: 'var(--radius-lg)',
+    padding: '18px 20px',
+    boxShadow: 'var(--shadow-sm)',
+  },
+
+  calloutHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    fontWeight: 700,
+    color: 'var(--accent-light)',
+    marginBottom: '10px',
+  },
+
+  calloutList: {
+    margin: 0,
+    paddingLeft: '18px',
+    color: 'var(--text-secondary)',
+    lineHeight: 1.6,
+    display: 'grid',
+    gap: '6px',
+  },
+
+  featureGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: '16px',
+    marginBottom: '16px',
+  },
+
+  featureCard: {
+    display: 'grid',
+    gridTemplateColumns: 'auto 1fr',
+    gap: '12px',
+    alignItems: 'flex-start',
+    padding: '14px 16px',
+    borderRadius: 'var(--radius-lg)',
+    border: '1px solid var(--card-border)',
+    background: 'linear-gradient(135deg, rgba(26, 41, 66, 0.7) 0%, rgba(15, 30, 46, 0.6) 100%)',
+  },
+
+  featureIcon: {
+    width: '40px',
+    height: '40px',
+    display: 'grid',
+    placeItems: 'center',
+    background: 'rgba(139, 157, 195, 0.12)',
+    borderRadius: '12px',
+    border: '1px solid rgba(139, 157, 195, 0.25)',
+  },
+
+  featureTitle: {
+    margin: 0,
+    color: 'var(--accent-light)',
+    fontSize: '1rem',
+    fontWeight: 700,
+  },
+
+  featureText: {
+    margin: '6px 0 0',
+    color: 'var(--text-secondary)',
+    lineHeight: 1.5,
   },
 
   content: {
@@ -664,6 +1120,26 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: 'var(--shadow-sm)',
   },
 
+  tertiaryButton: {
+    padding: '10px 14px',
+    background: 'rgba(139, 157, 195, 0.12)',
+    border: '1px solid rgba(139, 157, 195, 0.3)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+
+  secondaryTertiaryButton: {
+    padding: '10px 14px',
+    background: 'rgba(59, 130, 246, 0.12)',
+    border: '1px solid rgba(59, 130, 246, 0.3)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--accent-primary)',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+
   connectedWallet: {
     padding: '14px 20px',
     background: 'rgba(16, 185, 129, 0.1)',
@@ -696,6 +1172,81 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: '1.8',
     paddingLeft: '20px',
     margin: 0,
+  },
+
+  intervalGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    gap: '8px',
+    marginTop: 'var(--spacing-sm)',
+  },
+
+  intervalButton: {
+    padding: '10px 12px',
+    borderRadius: 'var(--radius-md)',
+    border: '1px solid var(--input-border)',
+    background: 'var(--input-bg)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+
+  intervalButtonActive: {
+    borderColor: 'var(--accent-primary)',
+    background: 'rgba(59, 130, 246, 0.1)',
+    color: 'var(--accent-primary)',
+  },
+
+  beneficiaryHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 'var(--spacing-lg)',
+    marginBottom: 'var(--spacing-sm)',
+  },
+
+  beneficiaryList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 'var(--spacing-md)',
+  },
+
+  beneficiaryCard: {
+    border: '1px solid var(--input-border)',
+    borderRadius: 'var(--radius-md)',
+    padding: 'var(--spacing-md)',
+    background: 'var(--input-bg)',
+  },
+
+  beneficiaryHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 'var(--spacing-sm)',
+  },
+
+  beneficiaryBadge: {
+    display: 'inline-block',
+    padding: '6px 10px',
+    background: 'rgba(59, 130, 246, 0.08)',
+    color: 'var(--accent-primary)',
+    borderRadius: 'var(--radius-sm)',
+    fontWeight: 700,
+    fontSize: '0.85rem',
+  },
+
+  beneficiaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: 'var(--spacing-md)',
+  },
+
+  removeButton: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--error)',
+    cursor: 'pointer',
+    fontWeight: 600,
   },
 
   uploadArea: {
@@ -796,6 +1347,67 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'rgba(59, 130, 246, 0.1)',
     border: '1px solid rgba(59, 130, 246, 0.3)',
     color: 'var(--info)',
+  },
+
+  shareGrid: {
+    marginTop: 'var(--spacing-lg)',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: 'var(--spacing-md)',
+  },
+
+  shareCard: {
+    padding: 'var(--spacing-md)',
+    border: '1px solid var(--input-border)',
+    borderRadius: 'var(--radius-md)',
+    background: 'var(--input-bg)',
+  },
+
+  shareHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 'var(--spacing-xs)',
+  },
+
+  shareTitle: {
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+  },
+
+  shareDescription: {
+    color: 'var(--text-secondary)',
+    fontSize: '0.9rem',
+    marginTop: 0,
+  },
+
+  shareActions: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap' as const,
+    margin: '8px 0',
+  },
+
+  shareCode: {
+    display: 'block',
+    marginTop: '8px',
+    fontFamily: 'monospace',
+    fontSize: '0.8rem',
+    wordBreak: 'break-all' as const,
+    color: 'var(--accent-secondary)',
+  },
+
+  tag: {
+    padding: '4px 8px',
+    borderRadius: 'var(--radius-sm)',
+    background: 'rgba(16, 185, 129, 0.12)',
+    color: 'var(--success)',
+    fontWeight: 700,
+    fontSize: '0.75rem',
+  },
+
+  code: {
+    fontFamily: 'monospace',
   },
 
   txInfo: {

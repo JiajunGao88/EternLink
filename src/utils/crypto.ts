@@ -120,18 +120,31 @@ export async function decryptFile(
 export function packEncryptedFile(
   encrypted: Uint8Array,
   iv: Uint8Array,
-  salt: Uint8Array
+  salt: Uint8Array,
+  shareThree?: string
 ): Blob {
-  const totalLength = salt.length + iv.length + encrypted.length;
+  const encoder = new TextEncoder();
+  const shareBytes = shareThree ? encoder.encode(shareThree) : new Uint8Array(0);
+  const header = new Uint8Array(2);
+  const view = new DataView(header.buffer);
+  view.setUint16(0, shareBytes.length);
+
+  const totalLength = salt.length + iv.length + header.length + shareBytes.length + encrypted.length;
   const packed = new Uint8Array(totalLength);
-  
+
   let offset = 0;
   packed.set(salt, offset);
   offset += salt.length;
   packed.set(iv, offset);
   offset += iv.length;
+  packed.set(header, offset);
+  offset += header.length;
+  if (shareBytes.length > 0) {
+    packed.set(shareBytes, offset);
+    offset += shareBytes.length;
+  }
   packed.set(encrypted, offset);
-  
+
   return new Blob([packed], { type: "application/octet-stream" });
 }
 
@@ -141,14 +154,26 @@ export function packEncryptedFile(
 export function unpackEncryptedFile(file: ArrayBuffer): {
   salt: Uint8Array;
   iv: Uint8Array;
+  shareThree?: string;
   encrypted: Uint8Array;
 } {
   const data = new Uint8Array(file);
   const salt = data.slice(0, 16);
   const iv = data.slice(16, 28);
-  const encrypted = data.slice(28);
-  
-  return { salt, iv, encrypted };
+  const shareLengthView = new DataView(data.buffer, data.byteOffset + 28, 2);
+  const shareLength = shareLengthView.getUint16(0);
+  const shareStart = 30;
+  const shareEnd = shareStart + shareLength;
+  const shareBytes = shareLength > 0 ? data.slice(shareStart, shareEnd) : new Uint8Array(0);
+  const encrypted = data.slice(shareEnd);
+  const decoder = new TextDecoder();
+
+  return {
+    salt,
+    iv,
+    shareThree: shareLength > 0 ? decoder.decode(shareBytes) : undefined,
+    encrypted,
+  };
 }
 
 /**

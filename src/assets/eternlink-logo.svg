@@ -1,0 +1,27 @@
+<svg width="240" height="72" viewBox="0 0 240 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0" y1="0" x2="240" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#94A6C5" />
+      <stop offset="1" stop-color="#D5DFEE" />
+    </linearGradient>
+  </defs>
+  <g>
+    <path
+      d="M60 12L30 26V38C30 53 40.5 66 60 72C79.5 66 90 53 90 38V26L60 12Z"
+      stroke="url(#logoGradient)"
+      stroke-width="3"
+      fill="none"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M44 42L54 36L60 46L70 30L76 34"
+      stroke="url(#logoGradient)"
+      stroke-width="3"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+  <text x="110" y="45" fill="url(#logoGradient)" font-family="'Inter', 'Segoe UI', system-ui" font-size="32" font-weight="700">
+    EternLink
+  </text>
+</svg>

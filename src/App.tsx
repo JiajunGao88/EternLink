@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import logo from "./assets/eternlink-logo.svg";
 import {
   sha256,
   hex32,
@@ -356,25 +357,70 @@ function App() {
         transition={{ duration: 0.6 }}
         style={styles.header}
       >
-        <div style={styles.logoContainer}>
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <path
-              d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
-              stroke="var(--accent-primary)"
-              strokeWidth="2.5"
-              fill="none"
-            />
-            <path
-              d="M16 24L20 28L32 16"
-              stroke="var(--accent-secondary)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <h1 style={styles.title}>EternLink</h1>
+        <div style={styles.brandRow}>
+          <img src={logo} alt="EternLink" style={styles.logoImage} />
+          <div>
+            <div style={styles.heroBadge}>Zero-trust estate kit</div>
+            <h1 style={styles.title}>Resilient custody for irreplaceable knowledge</h1>
+            <p style={styles.subtitle}>
+              Local encryption, multi-beneficiary recovery, and automated heartbeat releases keep
+              your critical files accessible to the right people—always.
+            </p>
+            <div style={styles.heroPills}>
+              <span style={styles.pill}>New: Beneficiary-aware heartbeat releases</span>
+              <span style={styles.pill}>New: IPFS-ready metadata slots</span>
+              <span style={styles.pill}>New: Recovery playbook previews</span>
+            </div>
+          </div>
         </div>
-        <p style={styles.subtitle}>Blockchain Proof of Existence · Eternal Protection for Your Digital Assets</p>
+
+        <div style={styles.heroGrid}>
+          <div style={{ ...styles.heroCard, ...styles.heroCardPrimary }}>
+            <div style={styles.heroCardHeader}>
+              <span style={styles.heroCardLabel}>Operational state</span>
+              <span style={styles.heroCardAccent}>Always-on</span>
+            </div>
+            <p style={styles.heroCardTitle}>Encrypt · Register · Verify in one flow</p>
+            <p style={styles.heroCardCopy}>
+              Capture the file hash, split credentials into three smart shares, and post proofs on-chain
+              while keeping payloads local. Beneficiaries receive live-safe shares while Share 3 remains
+              sealed until the heartbeat timer expires.
+            </p>
+            <div style={styles.heroInlineStats}>
+              <div>
+                <div style={styles.statNumber}>3</div>
+                <div style={styles.statLabel}>redundant shares</div>
+              </div>
+              <div>
+                <div style={styles.statNumber}>24/7</div>
+                <div style={styles.statLabel}>heartbeat monitor</div>
+              </div>
+              <div>
+                <div style={styles.statNumber}>Base</div>
+                <div style={styles.statLabel}>Sepolia ready</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={styles.heroCard}>
+            <div style={styles.heroCardHeader}>
+              <span style={styles.heroCardLabel}>Recovery preview</span>
+              <span style={styles.tag}>New</span>
+            </div>
+            <ul style={styles.heroList}>
+              <li>
+                <strong>Beneficiaries</strong> receive Share 2 with guidance for offline storage.
+              </li>
+              <li>
+                <strong>Heartbeat triggers</strong> control when Share 3 unlocks from the encrypted package.
+              </li>
+              <li>
+                <strong>Owners</strong> keep Share 1 pinned locally with optional offline backups.
+              </li>
+            </ul>
+            <div style={styles.heroFooter}>Designed for zero-knowledge proofs of existence, not custody risk.</div>
+          </div>
+        </div>
       </motion.div>
 
       {/* Main Content */}
@@ -827,41 +873,177 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   header: {
-    textAlign: 'center' as const,
-    marginBottom: '40px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '20px',
+    marginBottom: '32px',
   },
 
-  logoContainer: {
+  brandRow: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: '16px',
+    gap: '20px',
+  },
+
+  logoImage: {
+    width: '140px',
+    height: 'auto',
+    filter: 'drop-shadow(0 8px 24px rgba(139, 157, 195, 0.25))',
+  },
+
+  heroBadge: {
+    display: 'inline-block',
+    padding: '6px 12px',
+    borderRadius: '999px',
+    border: '1px solid rgba(139, 157, 195, 0.4)',
+    color: 'var(--accent-secondary)',
+    background: 'rgba(139, 157, 195, 0.1)',
+    fontWeight: 700,
+    fontSize: '0.85rem',
+    letterSpacing: '0.08em',
     marginBottom: '12px',
   },
 
   title: {
-    fontSize: '3rem',
+    fontSize: '2.4rem',
     fontWeight: '700',
     background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     margin: 0,
-    letterSpacing: '-0.02em',
+    letterSpacing: '-0.01em',
   },
 
   subtitle: {
-    fontSize: '1.1rem',
+    fontSize: '1rem',
     color: 'var(--text-secondary)',
+    marginTop: '8px',
+    marginBottom: 0,
+    fontWeight: '500',
+    maxWidth: '720px',
+  },
+
+  heroPills: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '10px',
+    marginTop: '14px',
+  },
+
+  pill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '8px 12px',
+    borderRadius: '12px',
+    background: 'rgba(26, 41, 66, 0.8)',
+    border: '1px solid rgba(139, 157, 195, 0.3)',
+    color: 'var(--text-primary)',
+    fontSize: '0.9rem',
+    gap: '6px',
+  },
+
+  heroGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '20px',
+    marginTop: '8px',
+  },
+
+  heroCard: {
+    background: 'linear-gradient(135deg, rgba(26, 41, 66, 0.9), rgba(10, 22, 40, 0.9))',
+    border: '1px solid rgba(139, 157, 195, 0.25)',
+    borderRadius: 'var(--radius-lg)',
+    padding: '20px',
+    boxShadow: 'var(--shadow-md)',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+
+  heroCardPrimary: {
+    background:
+      'linear-gradient(135deg, rgba(27, 44, 72, 0.95) 0%, rgba(12, 24, 43, 0.95) 100%)',
+    border: '1px solid rgba(148, 166, 197, 0.35)',
+  },
+
+  heroCardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    color: 'var(--text-secondary)',
+    fontSize: '0.9rem',
+  },
+
+  heroCardLabel: {
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    fontWeight: 700,
+  },
+
+  heroCardAccent: {
+    padding: '6px 10px',
+    borderRadius: '999px',
+    background: 'rgba(16, 185, 129, 0.12)',
+    color: 'var(--success)',
+    border: '1px solid rgba(16, 185, 129, 0.35)',
+    fontWeight: 700,
+  },
+
+  heroCardTitle: {
+    fontSize: '1.25rem',
+    fontWeight: 700,
+    color: 'var(--text-primary)',
     margin: 0,
-    fontWeight: '400',
+  },
+
+  heroCardCopy: {
+    margin: 0,
+    color: 'var(--text-secondary)',
+    lineHeight: 1.6,
+  },
+
+  heroInlineStats: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: '12px',
+    marginTop: '6px',
+  },
+
+  statNumber: {
+    fontSize: '1.4rem',
+    fontWeight: 800,
+    color: 'var(--accent-secondary)',
+  },
+
+  statLabel: {
+    color: 'var(--text-muted)',
+    fontSize: '0.9rem',
+  },
+
+  heroList: {
+    margin: 0,
+    paddingLeft: '20px',
+    color: 'var(--text-secondary)',
+    lineHeight: 1.7,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '8px',
+  },
+
+  heroFooter: {
+    marginTop: '8px',
+    fontSize: '0.95rem',
+    color: 'var(--text-primary)',
+    fontWeight: 600,
   },
 
   content: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(320px, 400px) 1fr',
+    gridTemplateColumns: 'minmax(340px, 420px) 1fr',
     gap: '24px',
     maxWidth: '1400px',
     margin: '0 auto',
+    marginTop: '8px',
   },
 
   leftPanel: {

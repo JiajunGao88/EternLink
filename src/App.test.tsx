@@ -202,7 +202,6 @@ describe('App Component', () => {
       await user.type(passwordInput, 'password123');
 
       await waitFor(() => {
-        const encryptButton = screen.getByText(/Encrypt & Register/i);
         // Note: Button might still be disabled due to default contract address check
         // This test verifies the file/password validation works
         expect(fileInput).toHaveValue();

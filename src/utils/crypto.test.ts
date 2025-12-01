@@ -135,11 +135,11 @@ describe('Crypto Utils', () => {
       const packed = packEncryptedFile(encrypted, iv, salt);
       expect(packed).toBeInstanceOf(Blob);
 
-      // Convert Blob to File for unpacking
-      const file = new File([packed], 'test.enc');
+      // Convert Blob to ArrayBuffer for unpacking
+      const arrayBuffer = await packed.arrayBuffer();
 
       // Unpack
-      const unpacked = await unpackEncryptedFile(file);
+      const unpacked = unpackEncryptedFile(arrayBuffer);
 
       expect(unpacked.salt).toEqual(salt);
       expect(unpacked.iv).toEqual(iv);
@@ -154,10 +154,10 @@ describe('Crypto Utils', () => {
 
       // Pack
       const packed = packEncryptedFile(encrypted, iv, salt);
-      const file = new File([packed], 'test.enc');
+      const arrayBuffer = await packed.arrayBuffer();
 
       // Unpack
-      const unpacked = await unpackEncryptedFile(file);
+      const unpacked = unpackEncryptedFile(arrayBuffer);
 
       // Decrypt with unpacked data
       const decrypted = await decryptFile(
@@ -202,8 +202,8 @@ describe('Crypto Utils', () => {
       const packed = packEncryptedFile(encrypted, iv, salt);
 
       // 4. Unpack (simulate upload)
-      const file = new File([packed], 'test.enc');
-      const unpacked = await unpackEncryptedFile(file);
+      const arrayBuffer = await packed.arrayBuffer();
+      const unpacked = unpackEncryptedFile(arrayBuffer);
 
       // 5. Decrypt
       const decrypted = await decryptFile(

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { ethers } from "ethers";
 import {
   sha256,
   hex32,
@@ -150,7 +149,7 @@ function App() {
 
       const contract = getContract(contractAddress, provider);
       const signer = await provider.getSigner();
-      const contractWithSigner = contract.connect(signer);
+      const contractWithSigner = contract.connect(signer) as any;
 
       // 5. Register on contract
       setStatus({ type: "info", message: "Submitting transaction to blockchain..." });

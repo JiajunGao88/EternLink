@@ -21,7 +21,7 @@ export function hex32(u8: Uint8Array): string {
 /**
  * 从密码派生 AES 密钥 (PBKDF2)
  */
-async function deriveAesKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+export async function deriveAesKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
@@ -34,7 +34,7 @@ async function deriveAesKey(password: string, salt: Uint8Array): Promise<CryptoK
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: salt,
+      salt: new Uint8Array(salt),
       iterations: 250000,
       hash: "SHA-256"
     },
@@ -70,7 +70,7 @@ export async function encryptFile(
   const encrypted = await crypto.subtle.encrypt(
     {
       name: "AES-GCM",
-      iv: iv
+      iv: new Uint8Array(iv)
     },
     key,
     fileContent
@@ -104,10 +104,10 @@ export async function decryptFile(
   const decrypted = await crypto.subtle.decrypt(
     {
       name: "AES-GCM",
-      iv: iv
+      iv: new Uint8Array(iv)
     },
     key,
-    encryptedData
+    new Uint8Array(encryptedData)
   );
 
   return decrypted;

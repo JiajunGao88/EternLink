@@ -34,11 +34,11 @@ describe('Integration Tests - Full Workflow', () => {
       expect(encryptedBlob.size).toBe(16 + 12 + encrypted.byteLength);
 
       // Step 5: Simulate user downloading and re-uploading .enc file
-      const encryptedFile = new File([encryptedBlob], 'document.txt.enc');
+      const encryptedArrayBuffer = await encryptedBlob.arrayBuffer();
 
       // Step 6: Unpack the encrypted file
       const { encrypted: unpackedEncrypted, iv: unpackedIv, salt: unpackedSalt } =
-        await unpackEncryptedFile(encryptedFile);
+        unpackEncryptedFile(encryptedArrayBuffer);
 
       // Step 7: Decrypt the file
       const decryptedBuffer = await decryptFile(
@@ -166,9 +166,8 @@ describe('Integration Tests - Full Workflow', () => {
       const { encrypted, iv, salt } = await encryptFile(buffer, testPassword);
 
       // Corrupt the encrypted data
-      const corruptedEncrypted = new ArrayBuffer(encrypted.byteLength);
-      const view = new Uint8Array(corruptedEncrypted);
-      crypto.getRandomValues(view);
+      const corruptedEncrypted = new Uint8Array(encrypted.byteLength);
+      crypto.getRandomValues(corruptedEncrypted);
 
       // Should throw error when decrypting corrupted data
       await expect(
@@ -227,8 +226,8 @@ describe('Integration Tests - Full Workflow', () => {
       // Perform 5 pack/unpack cycles
       for (let i = 0; i < 5; i++) {
         const packed = packEncryptedFile(result.encrypted, result.iv, result.salt);
-        const file = new File([packed], 'test.enc');
-        result = await unpackEncryptedFile(file);
+        const arrayBuffer = await packed.arrayBuffer();
+        result = unpackEncryptedFile(arrayBuffer);
       }
 
       // Decrypt final result

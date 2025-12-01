@@ -8,12 +8,20 @@ vi.mock('./utils/crypto', () => ({
   sha256: vi.fn().mockResolvedValue(new ArrayBuffer(32)),
   hex32: vi.fn().mockReturnValue('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'),
   encryptFile: vi.fn().mockResolvedValue({
-    encrypted: new ArrayBuffer(100),
+    encrypted: new Uint8Array(100),
     iv: new Uint8Array(12),
     salt: new Uint8Array(16),
   }),
   packEncryptedFile: vi.fn().mockReturnValue(new Blob()),
   downloadFile: vi.fn(),
+}));
+
+vi.mock('./utils/shamir', () => ({
+  splitPassword: vi.fn().mockReturnValue([
+    'S1-deadbeef',
+    'S2-deadbeef',
+    'S3-deadbeef',
+  ]),
 }));
 
 vi.mock('./utils/contract', () => ({

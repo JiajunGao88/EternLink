@@ -16,7 +16,6 @@ import {
   checkFileExists,
 } from "./utils/contract";
 import { splitPassword } from "./utils/shamir";
-import logo from "./assets/eternlink-logo.svg";
 
 interface Beneficiary {
   id: string;
@@ -73,23 +72,6 @@ function App() {
       relationship: "",
     },
   ]);
-  const featurePillars = [
-    {
-      title: "Client-side zero access",
-      description:
-        "AES-256-GCM encryption with PBKDF2 (250k) keeps seed phrases off the server.",
-    },
-    {
-      title: "2-of-3 recovery shares",
-      description:
-        "Shamir's Secret Sharing splits your password for owner, beneficiary, and time-lock release.",
-    },
-    {
-      title: "Heartbeat automation",
-      description:
-        "Configurable check-ins trigger beneficiary notifications only after your chosen timeout.",
-    },
-  ];
 
   // Connect Wallet
   const handleConnectWallet = async () => {

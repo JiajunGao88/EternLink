@@ -45,24 +45,33 @@ src/test/secretSharing.test.ts      (NEW)
 
 ---
 
-### Phase 2: Backend Infrastructure (Priority: HIGH)
+### Phase 2: Backend Infrastructure (Priority: HIGH) ✅ COMPLETED
 **Timeline**: Week 3-4
 **Complexity**: High
 **Dependencies**: None
 
 #### Tasks
-- [ ] Initialize backend project (`backend/` directory)
-- [ ] Setup Express.js + TypeScript
-- [ ] Design PostgreSQL database schema
-- [ ] Implement user authentication (SIWE - Sign-In With Ethereum)
-- [ ] Create REST API endpoints:
-  - POST `/api/heartbeat` - Update user check-in
-  - GET `/api/heartbeat/:userId` - Get heartbeat status
-  - POST `/api/beneficiaries` - Add beneficiary
-  - GET `/api/beneficiaries/:userId` - List beneficiaries
-  - POST `/api/register-file` - Register encrypted file metadata
-- [ ] Setup database migrations (Prisma/TypeORM)
-- [ ] Add API authentication middleware
+- ✅ Initialize backend project (`backend/` directory)
+- ✅ Setup Express.js + TypeScript
+- ✅ Design PostgreSQL database schema
+- ✅ Implement user authentication (SIWE - Sign-In With Ethereum)
+- ✅ Create REST API endpoints:
+  - POST `/api/heartbeat` - Create/update heartbeat
+  - GET `/api/heartbeat` - Get all user heartbeats
+  - GET `/api/heartbeat/:heartbeatId` - Get specific heartbeat
+  - PUT `/api/heartbeat/:heartbeatId` - Update check-in
+  - DELETE `/api/heartbeat/:heartbeatId` - Delete heartbeat
+  - POST `/api/beneficiary` - Add beneficiary
+  - GET `/api/beneficiary/:heartbeatId` - List beneficiaries
+  - PUT `/api/beneficiary/:beneficiaryId` - Update beneficiary
+  - DELETE `/api/beneficiary/:beneficiaryId` - Delete beneficiary
+  - POST `/api/auth/nonce` - Get SIWE nonce
+  - POST `/api/auth/verify` - Verify SIWE signature
+  - GET `/api/auth/profile` - Get user profile
+- ✅ Setup database migrations (Prisma)
+- ✅ Add API authentication middleware (JWT)
+- ✅ Implement heartbeat monitoring service (cron job)
+- ✅ Create email notification system
 - [ ] Write API integration tests
 
 #### Database Schema
@@ -149,9 +158,11 @@ backend/
 #### Success Criteria
 - ✅ Backend server running on port 3001
 - ✅ All API endpoints functional
-- ✅ Database schema deployed
-- ✅ Wallet authentication working
-- ✅ API integration tests passing
+- ✅ Database schema deployed with Prisma
+- ✅ Wallet authentication working (SIWE + JWT)
+- ✅ Heartbeat monitoring service running
+- ✅ Email notification system functional
+- ⏳ API integration tests (pending)
 
 ---
 

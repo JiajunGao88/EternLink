@@ -18,6 +18,7 @@ import {
 // import ShamirDemo from "./components/ShamirDemo";
 // import ShamirDemoSimple from "./components/ShamirDemoSimple";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
+import LandingPage from "./components/LandingPage";
 
 // Default Configuration
 const DEFAULTS = {
@@ -34,6 +35,7 @@ interface FileInfo {
 }
 
 function App() {
+  const [showLandingPage, setShowLandingPage] = useState(true);
   const [showDemo, setShowDemo] = useState(false);
   const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
   const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
@@ -49,6 +51,11 @@ function App() {
   const [account, setAccount] = useState<string>("");
   const [fileHash, setFileHash] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
+
+  // Show Landing Page
+  if (showLandingPage) {
+    return <LandingPage onTryDemo={() => setShowLandingPage(false)} />;
+  }
 
   // Show Shamir's Secret Sharing demo
   if (showDemo) {
@@ -301,31 +308,57 @@ function App() {
             </svg>
             <h1 style={styles.title}>EternLink</h1>
           </div>
-          <button
-            onClick={() => setShowDemo(true)}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              backgroundColor: 'var(--accent-primary)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--accent-secondary)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--accent-primary)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            🔐 Try Shamir Demo
-          </button>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button
+              onClick={() => setShowLandingPage(true)}
+              style={{
+                padding: '12px 24px',
+                fontSize: '16px',
+                backgroundColor: 'transparent',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--card-border)',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                e.currentTarget.style.color = 'var(--accent-primary)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = 'var(--card-border)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+            >
+              ← Back to Home
+            </button>
+            <button
+              onClick={() => setShowDemo(true)}
+              style={{
+                padding: '12px 24px',
+                fontSize: '16px',
+                backgroundColor: 'var(--accent-primary)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--accent-secondary)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--accent-primary)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              🔐 Try Shamir Demo
+            </button>
+          </div>
         </div>
         <p style={styles.subtitle}>Blockchain Proof of Existence · Eternal Protection for Your Digital Assets</p>
       </motion.div>

@@ -72,7 +72,7 @@ body {
   /* 添加噪点纹理 */
   position: relative;
   min-height: 100vh;
-  padding: 20px;
+  padding: 0;
   color: var(--text-primary);
 }
 

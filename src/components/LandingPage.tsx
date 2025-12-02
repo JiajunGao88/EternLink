@@ -393,7 +393,7 @@ export default function LandingPage({ onTryDemo }: LandingPageProps) {
             Secured with AES-256-GCM Encryption · Base Sepolia L2 Network
           </p>
           <p style={styles.footerCopy}>
-            © 2024 EternLink. All rights reserved.
+            © 2025 EternLink. All rights reserved.
           </p>
         </div>
       </footer>

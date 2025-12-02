@@ -97,24 +97,24 @@ export function getContract(
  * 注册文件到链上
  */
 export async function registerFile(
-  contract: ethers.Contract,
+  contract: ethers.Contract | ethers.BaseContract,
   fileHash: string,
   cipher: string,
   cid: string,
   size: number,
   mime: string
 ): Promise<ethers.ContractTransactionResponse> {
-  return await contract.register(fileHash, cipher, cid, size, mime);
+  return await (contract as any).register(fileHash, cipher, cid, size, mime) as ethers.ContractTransactionResponse;
 }
 
 /**
  * 检查文件是否存在
  */
 export async function checkFileExists(
-  contract: ethers.Contract,
+  contract: ethers.Contract | ethers.BaseContract,
   fileHash: string
 ): Promise<boolean> {
-  return await contract.exists(fileHash);
+  return await (contract as any).exists(fileHash) as boolean;
 }
 
 // 扩展 Window 接口以支持 ethereum

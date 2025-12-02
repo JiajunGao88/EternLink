@@ -9,16 +9,69 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Users table - stores wallet addresses
+// Users table - stores user account information
 model User {
-  id             String      @id @default(uuid())
-  walletAddress  String      @unique @map("wallet_address") @db.VarChar(42)
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
+  id                    String       @id @default(uuid())
+  walletAddress         String?      @unique @map("wallet_address") @db.VarChar(42)
+  email                 String       @unique @db.VarChar(255)
+  passwordHash          String       @map("password_hash") @db.VarChar(255)
+  emailVerified         Boolean      @default(false) @map("email_verified")
+  phoneNumber           String?      @map("phone_number") @db.VarChar(20)
+  phoneVerified         Boolean      @default(false) @map("phone_verified")
+  voiceSignature        String?      @map("voice_signature") @db.Text // Base64 encoded voice recording
+  accountFrozen         Boolean      @default(false) @map("account_frozen")
+  freezeReason          String?      @map("freeze_reason") @db.VarChar(255)
+  lastLoginAt           DateTime?    @map("last_login_at")
+  emailNotificationDays Int?         @map("email_notification_days") // Days before email notification
+  phoneNotificationDays Int?         @map("phone_notification_days") // Days before phone notification
+  freezeDays            Int?         @map("freeze_days") // Days before account freeze
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
 
-  heartbeats     Heartbeat[]
+  heartbeats            Heartbeat[]
+  verificationCodes     VerificationCode[]
+  loginHistory          LoginHistory[]
 
+  @@index([email])
+  @@index([lastLoginAt])
   @@map("users")
+}
+
+// Verification codes for email/phone verification
+model VerificationCode {
+  id            String    @id @default(uuid())
+  userId        String?   @map("user_id")
+  email         String?   @db.VarChar(255)
+  phoneNumber   String?   @map("phone_number") @db.VarChar(20)
+  code          String    @db.VarChar(6)
+  type          String    @db.VarChar(20) // email_verification, phone_verification, password_reset
+  expiresAt     DateTime  @map("expires_at")
+  verified      Boolean   @default(false)
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([code])
+  @@index([expiresAt])
+  @@map("verification_codes")
+}
+
+// Login history for tracking user activity
+model LoginHistory {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  loginAt       DateTime  @default(now()) @map("login_at")
+  ipAddress     String?   @map("ip_address") @db.VarChar(45)
+  userAgent     String?   @map("user_agent") @db.Text
+  loginMethod   String    @map("login_method") @db.VarChar(50) // password, siwe, voice
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([loginAt])
+  @@map("login_history")
 }
 
 // Heartbeats table - tracks user check-ins and encrypted shares

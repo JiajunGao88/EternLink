@@ -6,11 +6,14 @@ import { config, validateConfig } from './config/environment';
 import { prisma, disconnectDatabase, isDatabaseConnected } from './config/database';
 import { logger } from './utils/logger';
 import { heartbeatService } from './services/heartbeat.service';
+import { accountMonitorService } from './services/account-monitor.service';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
 import heartbeatRoutes from './routes/heartbeat.routes';
 import beneficiaryRoutes from './routes/beneficiary.routes';
+import registrationRoutes from './routes/registration.routes';
+import accountRoutes from './routes/account.routes';
 
 // Validate environment configuration
 try {
@@ -67,6 +70,8 @@ app.get('/health', async (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/registration', registrationRoutes);
+app.use('/api/account', accountRoutes);
 app.use('/api/heartbeat', heartbeatRoutes);
 app.use('/api/beneficiary', beneficiaryRoutes);
 
@@ -103,6 +108,9 @@ async function startServer() {
     // Start heartbeat monitoring service
     heartbeatService.start();
 
+    // Start account monitoring service
+    accountMonitorService.start();
+
     // Start HTTP server
     const server = app.listen(config.port, () => {
       logger.info(`🚀 EternLink Backend Server started`, {
@@ -121,6 +129,9 @@ async function startServer() {
 
         // Stop heartbeat service
         heartbeatService.stop();
+
+        // Stop account monitor service
+        accountMonitorService.stop();
 
         // Disconnect database
         await disconnectDatabase();

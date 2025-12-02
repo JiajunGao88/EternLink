@@ -150,6 +150,165 @@ EternLink Team
     });
   }
 
+  async sendVerificationCode(email: string, code: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const subject = 'EternLink Email Verification Code';
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verification</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #0a1628 0%, #1a2942 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: #C0C8D4; margin: 0; font-size: 28px;">EternLink</h1>
+    <p style="color: #8b96a8; margin: 10px 0 0 0;">Email Verification</p>
+  </div>
+
+  <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+    <h2 style="color: #1a2942; margin-top: 0;">Verify Your Email Address</h2>
+
+    <p>Thank you for registering with EternLink. Please use the verification code below to complete your registration:</p>
+
+    <div style="background: #f8f9fa; padding: 20px; border-left: 4px solid #C0C8D4; margin: 20px 0; text-align: center;">
+      <p style="margin: 0; font-size: 14px; color: #666;">Your Verification Code</p>
+      <div style="font-size: 32px; font-weight: bold; color: #1a2942; letter-spacing: 8px; margin-top: 10px; font-family: monospace;">
+        ${code}
+      </div>
+      <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">This code will expire in 15 minutes</p>
+    </div>
+
+    <p>If you didn't request this verification code, please ignore this email.</p>
+
+    <p style="margin-top: 30px;">Best regards,<br><strong>EternLink Team</strong></p>
+  </div>
+
+  <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none;">
+    <p style="margin: 0; font-size: 12px; color: #6c757d;">© 2025 EternLink. All rights reserved.</p>
+  </div>
+</body>
+</html>
+    `;
+
+    const text = `
+EternLink Email Verification
+
+Your verification code: ${code}
+
+This code will expire in 15 minutes.
+
+If you didn't request this verification code, please ignore this email.
+
+Best regards,
+EternLink Team
+
+© 2025 EternLink. All rights reserved.
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text,
+    });
+  }
+
+  async sendInactivityNotification(
+    email: string,
+    userName: string,
+    daysSinceLogin: number,
+    notificationLevel: 'email' | 'phone' | 'freeze'
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const subject = `EternLink Account Alert - ${daysSinceLogin} Days of Inactivity`;
+
+    let message = '';
+    let urgency = '';
+
+    if (notificationLevel === 'email') {
+      urgency = 'Notice';
+      message = `This is a friendly reminder that you haven't logged into your EternLink account for ${daysSinceLogin} days.`;
+    } else if (notificationLevel === 'phone') {
+      urgency = 'Important';
+      message = `Your EternLink account has been inactive for ${daysSinceLogin} days. You will also receive an SMS notification.`;
+    } else {
+      urgency = 'Critical';
+      message = `Your EternLink account has been inactive for ${daysSinceLogin} days and will be frozen soon. Voice verification will be required to unlock.`;
+    }
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Inactivity Alert</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #0a1628 0%, #1a2942 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: #C0C8D4; margin: 0; font-size: 28px;">EternLink</h1>
+    <p style="color: #8b96a8; margin: 10px 0 0 0;">${urgency}: Account Inactivity</p>
+  </div>
+
+  <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+    <h2 style="color: #1a2942; margin-top: 0;">Hello ${userName || 'User'},</h2>
+
+    <p>${message}</p>
+
+    <div style="background: ${notificationLevel === 'freeze' ? '#fff3cd' : '#e7f3ff'}; padding: 20px; border-left: 4px solid ${notificationLevel === 'freeze' ? '#ffc107' : '#2196F3'}; margin: 20px 0;">
+      <p style="margin: 0; font-weight: bold; color: ${notificationLevel === 'freeze' ? '#856404' : '#0c5484'};">Days Since Last Login: ${daysSinceLogin}</p>
+      <p style="margin: 10px 0 0 0; font-size: 14px; color: ${notificationLevel === 'freeze' ? '#856404' : '#0c5484'};">Please log in to keep your account active.</p>
+    </div>
+
+    ${notificationLevel === 'freeze' ? `
+    <div style="background: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
+      <p style="margin: 0; font-size: 14px; color: #721c24;"><strong>Warning:</strong> If you don't log in soon, your account will be frozen and you'll need voice verification to unlock it.</p>
+    </div>
+    ` : ''}
+
+    <p style="margin-top: 30px;">To prevent account freeze, please log in to your account:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="https://eternlink.com/login" style="background: linear-gradient(135deg, #C0C8D4 0%, #8b9da8 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">Log In to Your Account</a>
+    </div>
+
+    <p style="margin-top: 30px;">Best regards,<br><strong>EternLink Team</strong></p>
+  </div>
+
+  <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none;">
+    <p style="margin: 0; font-size: 12px; color: #6c757d;">© 2025 EternLink. All rights reserved.</p>
+  </div>
+</body>
+</html>
+    `;
+
+    const text = `
+EternLink Account Alert - ${daysSinceLogin} Days of Inactivity
+
+Hello ${userName || 'User'},
+
+${message}
+
+Days Since Last Login: ${daysSinceLogin}
+
+${notificationLevel === 'freeze' ? 'Warning: If you don\'t log in soon, your account will be frozen and you\'ll need voice verification to unlock it.' : ''}
+
+Please log in to your account: https://eternlink.com/login
+
+Best regards,
+EternLink Team
+
+© 2025 EternLink. All rights reserved.
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text,
+    });
+  }
+
   async verifyConnection(): Promise<boolean> {
     try {
       await this.transporter.verify();

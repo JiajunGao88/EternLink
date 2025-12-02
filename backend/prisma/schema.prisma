@@ -1,0 +1,82 @@
+// Prisma schema for EternLink Dead Man's Switch
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table - stores wallet addresses
+model User {
+  id             String      @id @default(uuid())
+  walletAddress  String      @unique @map("wallet_address") @db.VarChar(42)
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  heartbeats     Heartbeat[]
+
+  @@map("users")
+}
+
+// Heartbeats table - tracks user check-ins and encrypted shares
+model Heartbeat {
+  id                  String        @id @default(uuid())
+  userId              String        @map("user_id")
+  lastCheckIn         DateTime      @map("last_check_in")
+  intervalDays        Int           @map("interval_days") // 30, 60, 90, 180
+  encryptedFileHash   String        @map("encrypted_file_hash") @db.VarChar(66) // 0x...
+  shareOneEncrypted   String        @map("share_one_encrypted") @db.Text // Encrypted SSS Share 1 (user keeps)
+  shareThreeEncrypted String        @map("share_three_encrypted") @db.Text // Encrypted SSS Share 3 (stored on blockchain/metadata)
+  recoveryTriggered   Boolean       @default(false) @map("recovery_triggered")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  beneficiaries       Beneficiary[]
+  notificationLogs    NotificationLog[]
+
+  @@index([userId])
+  @@index([lastCheckIn])
+  @@map("heartbeats")
+}
+
+// Beneficiaries table - stores beneficiary information and Share 2
+model Beneficiary {
+  id                String    @id @default(uuid())
+  heartbeatId       String    @map("heartbeat_id")
+  name              String    @db.VarChar(255)
+  email             String    @db.VarChar(255)
+  relationship      String?   @db.VarChar(100)
+  shareTwoEncrypted String    @map("share_two_encrypted") @db.Text // Encrypted SSS Share 2
+  notifiedAt        DateTime? @map("notified_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  heartbeat         Heartbeat @relation(fields: [heartbeatId], references: [id], onDelete: Cascade)
+  notificationLogs  NotificationLog[]
+
+  @@index([heartbeatId])
+  @@index([email])
+  @@map("beneficiaries")
+}
+
+// Notification logs - tracks email notifications sent to beneficiaries
+model NotificationLog {
+  id              String    @id @default(uuid())
+  heartbeatId     String    @map("heartbeat_id")
+  beneficiaryId   String    @map("beneficiary_id")
+  sentAt          DateTime  @default(now()) @map("sent_at")
+  emailStatus     String    @map("email_status") @db.VarChar(50) // sent, failed, bounced
+  emailProviderId String?   @map("email_provider_id") @db.VarChar(255)
+  errorMessage    String?   @map("error_message") @db.Text
+
+  heartbeat       Heartbeat  @relation(fields: [heartbeatId], references: [id], onDelete: Cascade)
+  beneficiary     Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+
+  @@index([heartbeatId])
+  @@index([beneficiaryId])
+  @@index([sentAt])
+  @@map("notification_logs")
+}

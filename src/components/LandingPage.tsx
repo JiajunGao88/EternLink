@@ -24,7 +24,7 @@ export default function LandingPage({ onTryDemo }: LandingPageProps) {
       >
         <div style={styles.navContent}>
           <div style={styles.logoContainer}>
-            <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+            <svg width="clamp(32px, 5vw, 40px)" height="clamp(32px, 5vw, 40px)" viewBox="0 0 48 48" fill="none" style={{ flexShrink: 0 }}>
               <path
                 d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
                 stroke="var(--accent-primary)"
@@ -76,7 +76,7 @@ export default function LandingPage({ onTryDemo }: LandingPageProps) {
             transition={{ duration: 0.8, delay: 0.4 }}
             style={styles.heroIcon}
           >
-            <svg width="120" height="120" viewBox="0 0 48 48" fill="none">
+            <svg width="clamp(80px, 15vw, 120px)" height="clamp(80px, 15vw, 120px)" viewBox="0 0 48 48" fill="none">
               <path
                 d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
                 stroke="var(--accent-primary)"
@@ -169,7 +169,7 @@ export default function LandingPage({ onTryDemo }: LandingPageProps) {
               style={styles.featureCard}
             >
               <div style={styles.featureIcon}>
-                <svg width="32" height="32" viewBox="0 0 20 20" fill="none">
+                <svg width="clamp(24px, 4vw, 32px)" height="clamp(24px, 4vw, 32px)" viewBox="0 0 20 20" fill="none">
                   <rect x="5" y="9" width="10" height="8" rx="1" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
                   <path d="M7 9V6C7 4.34315 8.34315 3 10 3C11.6569 3 13 4.34315 13 6V9" stroke="var(--accent-primary)" strokeWidth="1.5"/>
                 </svg>
@@ -190,7 +190,7 @@ export default function LandingPage({ onTryDemo }: LandingPageProps) {
               style={styles.featureCard}
             >
               <div style={styles.featureIcon}>
-                <svg width="32" height="32" viewBox="0 0 20 20" fill="none">
+                <svg width="clamp(24px, 4vw, 32px)" height="clamp(24px, 4vw, 32px)" viewBox="0 0 20 20" fill="none">
                   <path d="M10 2L3 6V10C3 14 6 17.5 10 19C14 17.5 17 14 17 10V6L10 2Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
                 </svg>
               </div>
@@ -210,7 +210,7 @@ export default function LandingPage({ onTryDemo }: LandingPageProps) {
               style={styles.featureCard}
             >
               <div style={styles.featureIcon}>
-                <svg width="32" height="32" viewBox="0 0 20 20" fill="none">
+                <svg width="clamp(24px, 4vw, 32px)" height="clamp(24px, 4vw, 32px)" viewBox="0 0 20 20" fill="none">
                   <circle cx="9" cy="9" r="6" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
                   <path d="M14 14L18 18" stroke="var(--accent-primary)" strokeWidth="1.5" strokeLinecap="round"/>
                   <path d="M7 9L8.5 10.5L12 7" stroke="var(--accent-primary)" strokeWidth="1.5" strokeLinecap="round"/>
@@ -373,7 +373,7 @@ export default function LandingPage({ onTryDemo }: LandingPageProps) {
       <footer style={styles.footer}>
         <div style={styles.footerContent}>
           <div style={styles.footerLogo}>
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <svg width="clamp(24px, 4vw, 32px)" height="clamp(24px, 4vw, 32px)" viewBox="0 0 48 48" fill="none">
               <path
                 d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
                 stroke="var(--accent-primary)"
@@ -418,26 +418,28 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 1000,
     background: "rgba(139, 157, 195, 0.1)",
     backdropFilter: "blur(20px)",
-    padding: "20px 0",
+    padding: "clamp(12px, 2vw, 20px) 0",
   },
 
   navContent: {
-    maxWidth: "1200px",
+    maxWidth: "min(1400px, 98vw)",
     margin: "0 auto",
-    padding: "0 40px",
+    padding: "0 clamp(16px, 4vw, 40px)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    flexWrap: "wrap" as const,
+    gap: "clamp(12px, 2vw, 20px)",
   },
 
   logoContainer: {
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: "clamp(8px, 1.5vw, 12px)",
   },
 
   logoText: {
-    fontSize: "1.5rem",
+    fontSize: "clamp(1.2rem, 2.5vw, 1.5rem)",
     fontWeight: "700",
     background: "linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)",
     WebkitBackgroundClip: "text",
@@ -448,27 +450,28 @@ const styles: Record<string, React.CSSProperties> = {
   navLinks: {
     display: "flex",
     alignItems: "center",
-    gap: "32px",
+    gap: "clamp(16px, 3vw, 32px)",
+    flexWrap: "wrap" as const,
   },
 
   navLink: {
     background: "none",
     border: "none",
     color: "var(--text-secondary)",
-    fontSize: "0.95rem",
+    fontSize: "clamp(0.85rem, 1.5vw, 0.95rem)",
     fontWeight: "500",
     cursor: "pointer",
     transition: "color 0.3s ease",
-    padding: "8px 0",
+    padding: "clamp(6px, 1vw, 8px) 0",
   },
 
   navCtaButton: {
-    padding: "12px 24px",
+    padding: "clamp(10px, 1.5vw, 12px) clamp(16px, 2.5vw, 24px)",
     background: "linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)",
     color: "white",
     border: "none",
     borderRadius: "var(--radius-md)",
-    fontSize: "0.95rem",
+    fontSize: "clamp(0.85rem, 1.5vw, 0.95rem)",
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
@@ -476,28 +479,28 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   hero: {
-    paddingTop: "140px",
-    paddingBottom: "100px",
+    paddingTop: "clamp(100px, 15vh, 140px)",
+    paddingBottom: "clamp(60px, 10vh, 100px)",
     textAlign: "center" as const,
     width: "100%",
   },
 
   heroWrapper: {
-    maxWidth: "900px",
+    maxWidth: "min(1200px, 98vw)",
     margin: "0 auto",
-    paddingLeft: "40px",
-    paddingRight: "40px",
+    paddingLeft: "clamp(16px, 4vw, 40px)",
+    paddingRight: "clamp(16px, 4vw, 40px)",
   },
 
   heroContent: {
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
-    gap: "32px",
+    gap: "clamp(24px, 4vw, 32px)",
   },
 
   heroIcon: {
-    marginBottom: "20px",
+    marginBottom: "clamp(12px, 2vw, 20px)",
   },
 
   heroTitle: {
@@ -512,28 +515,28 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   heroSubtitle: {
-    fontSize: "1.25rem",
+    fontSize: "clamp(1rem, 2vw, 1.25rem)",
     color: "var(--text-secondary)",
     lineHeight: "1.6",
-    maxWidth: "700px",
+    maxWidth: "min(1000px, 90vw)",
     margin: 0,
   },
 
   heroButtons: {
     display: "flex",
-    gap: "20px",
-    marginTop: "20px",
+    gap: "clamp(12px, 2vw, 20px)",
+    marginTop: "clamp(12px, 2vw, 20px)",
     flexWrap: "wrap" as const,
     justifyContent: "center",
   },
 
   primaryButton: {
-    padding: "16px 32px",
+    padding: "clamp(12px, 2vw, 16px) clamp(24px, 3vw, 32px)",
     background: "linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)",
     color: "white",
     border: "none",
     borderRadius: "var(--radius-md)",
-    fontSize: "1rem",
+    fontSize: "clamp(0.9rem, 1.5vw, 1rem)",
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
@@ -541,20 +544,20 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   secondaryButton: {
-    padding: "16px 32px",
+    padding: "clamp(12px, 2vw, 16px) clamp(24px, 3vw, 32px)",
     background: "rgba(139, 157, 195, 0.1)",
     color: "var(--accent-primary)",
     border: "1px solid rgba(139, 157, 195, 0.3)",
     borderRadius: "var(--radius-md)",
-    fontSize: "1rem",
+    fontSize: "clamp(0.9rem, 1.5vw, 1rem)",
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
   },
 
   trustSection: {
-    paddingTop: "80px",
-    paddingBottom: "80px",
+    paddingTop: "clamp(60px, 8vh, 80px)",
+    paddingBottom: "clamp(60px, 8vh, 80px)",
     paddingLeft: "0",
     paddingRight: "0",
     textAlign: "center" as const,
@@ -563,62 +566,62 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   trustContent: {
-    maxWidth: "800px",
+    maxWidth: "min(1200px, 98vw)",
     margin: "0 auto",
-    paddingLeft: "40px",
-    paddingRight: "40px",
+    paddingLeft: "clamp(16px, 4vw, 40px)",
+    paddingRight: "clamp(16px, 4vw, 40px)",
   },
 
   trustTitle: {
-    fontSize: "2rem",
+    fontSize: "clamp(1.5rem, 4vw, 2rem)",
     fontWeight: "600",
     color: "var(--text-primary)",
-    marginBottom: "20px",
+    marginBottom: "clamp(12px, 2vw, 20px)",
   },
 
   trustText: {
-    fontSize: "1.1rem",
+    fontSize: "clamp(0.95rem, 2vw, 1.1rem)",
     color: "var(--text-secondary)",
     lineHeight: "1.6",
   },
 
   featuresSection: {
-    paddingTop: "100px",
-    paddingBottom: "100px",
+    paddingTop: "clamp(60px, 10vh, 100px)",
+    paddingBottom: "clamp(60px, 10vh, 100px)",
     paddingLeft: "0",
     paddingRight: "0",
     width: "100%",
   },
 
   sectionContent: {
-    maxWidth: "1200px",
+    maxWidth: "min(1400px, 98vw)",
     margin: "0 auto",
-    paddingLeft: "40px",
-    paddingRight: "40px",
+    paddingLeft: "clamp(16px, 4vw, 40px)",
+    paddingRight: "clamp(16px, 4vw, 40px)",
   },
 
   sectionTitle: {
-    fontSize: "clamp(2rem, 4vw, 3rem)",
+    fontSize: "clamp(1.75rem, 5vw, 3rem)",
     fontWeight: "700",
     color: "var(--text-primary)",
     textAlign: "center" as const,
-    marginBottom: "20px",
+    marginBottom: "clamp(12px, 2vw, 20px)",
   },
 
   sectionSubtitle: {
-    fontSize: "1.2rem",
+    fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
     color: "var(--text-secondary)",
     textAlign: "center" as const,
-    maxWidth: "700px",
-    margin: "0 auto 60px",
+    maxWidth: "min(1000px, 90vw)",
+    margin: "0 auto clamp(40px, 6vh, 60px)",
     lineHeight: "1.6",
   },
 
   featuresGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: "32px",
-    marginBottom: "60px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
+    gap: "clamp(24px, 4vw, 32px)",
+    marginBottom: "clamp(40px, 6vh, 60px)",
   },
 
   featureCard: {
@@ -626,24 +629,24 @@ const styles: Record<string, React.CSSProperties> = {
     backdropFilter: "blur(20px)",
     border: "1px solid var(--card-border)",
     borderRadius: "var(--radius-lg)",
-    padding: "40px",
+    padding: "clamp(24px, 4vw, 40px)",
     transition: "all 0.3s ease",
   },
 
   featureIcon: {
-    marginBottom: "24px",
+    marginBottom: "clamp(16px, 3vw, 24px)",
     color: "var(--accent-primary)",
   },
 
   featureTitle: {
-    fontSize: "1.5rem",
+    fontSize: "clamp(1.25rem, 3vw, 1.5rem)",
     fontWeight: "600",
     color: "var(--text-primary)",
-    marginBottom: "16px",
+    marginBottom: "clamp(12px, 2vw, 16px)",
   },
 
   featureText: {
-    fontSize: "1rem",
+    fontSize: "clamp(0.9rem, 1.8vw, 1rem)",
     color: "var(--text-secondary)",
     lineHeight: "1.6",
   },
@@ -653,12 +656,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   featuresButton: {
-    padding: "16px 32px",
+    padding: "clamp(12px, 2vw, 16px) clamp(24px, 3vw, 32px)",
     background: "linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)",
     color: "white",
     border: "none",
     borderRadius: "var(--radius-md)",
-    fontSize: "1rem",
+    fontSize: "clamp(0.9rem, 1.5vw, 1rem)",
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
@@ -666,8 +669,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   howItWorksSection: {
-    paddingTop: "100px",
-    paddingBottom: "100px",
+    paddingTop: "clamp(60px, 10vh, 100px)",
+    paddingBottom: "clamp(60px, 10vh, 100px)",
     paddingLeft: "0",
     paddingRight: "0",
     background: "rgba(139, 157, 195, 0.03)",
@@ -676,9 +679,9 @@ const styles: Record<string, React.CSSProperties> = {
 
   stepsContainer: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "24px",
-    marginBottom: "60px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))",
+    gap: "clamp(20px, 3vw, 24px)",
+    marginBottom: "clamp(40px, 6vh, 60px)",
   },
 
   stepCard: {
@@ -686,16 +689,16 @@ const styles: Record<string, React.CSSProperties> = {
     backdropFilter: "blur(20px)",
     border: "1px solid var(--card-border)",
     borderRadius: "var(--radius-lg)",
-    padding: "32px",
+    padding: "clamp(24px, 4vw, 32px)",
     position: "relative" as const,
   },
 
   stepNumber: {
     position: "absolute" as const,
-    top: "-16px",
-    left: "32px",
-    width: "40px",
-    height: "40px",
+    top: "clamp(-12px, -1.5vw, -16px)",
+    left: "clamp(24px, 4vw, 32px)",
+    width: "clamp(32px, 5vw, 40px)",
+    height: "clamp(32px, 5vw, 40px)",
     background: "linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)",
     borderRadius: "50%",
     display: "flex",
@@ -703,20 +706,20 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     color: "white",
     fontWeight: "700",
-    fontSize: "1.2rem",
+    fontSize: "clamp(1rem, 2vw, 1.2rem)",
     boxShadow: "var(--shadow-md)",
   },
 
   stepTitle: {
-    fontSize: "1.25rem",
+    fontSize: "clamp(1.1rem, 2.5vw, 1.25rem)",
     fontWeight: "600",
     color: "var(--text-primary)",
-    marginTop: "16px",
-    marginBottom: "12px",
+    marginTop: "clamp(12px, 2vw, 16px)",
+    marginBottom: "clamp(8px, 1.5vw, 12px)",
   },
 
   stepText: {
-    fontSize: "0.95rem",
+    fontSize: "clamp(0.85rem, 1.8vw, 0.95rem)",
     color: "var(--text-secondary)",
     lineHeight: "1.6",
   },
@@ -726,8 +729,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   securitySection: {
-    paddingTop: "100px",
-    paddingBottom: "100px",
+    paddingTop: "clamp(60px, 10vh, 100px)",
+    paddingBottom: "clamp(60px, 10vh, 100px)",
     paddingLeft: "0",
     paddingRight: "0",
     width: "100%",
@@ -735,8 +738,8 @@ const styles: Record<string, React.CSSProperties> = {
 
   securityGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-    gap: "32px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))",
+    gap: "clamp(24px, 4vw, 32px)",
   },
 
   securityItem: {
@@ -744,21 +747,21 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   securityTitle: {
-    fontSize: "1.25rem",
+    fontSize: "clamp(1.1rem, 2.5vw, 1.25rem)",
     fontWeight: "600",
     color: "var(--accent-primary)",
-    marginBottom: "12px",
+    marginBottom: "clamp(8px, 1.5vw, 12px)",
   },
 
   securityText: {
-    fontSize: "0.95rem",
+    fontSize: "clamp(0.85rem, 1.8vw, 0.95rem)",
     color: "var(--text-secondary)",
     lineHeight: "1.6",
   },
 
   ctaSection: {
-    paddingTop: "120px",
-    paddingBottom: "120px",
+    paddingTop: "clamp(80px, 12vh, 120px)",
+    paddingBottom: "clamp(80px, 12vh, 120px)",
     paddingLeft: "0",
     paddingRight: "0",
     textAlign: "center" as const,
@@ -767,33 +770,33 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   ctaContent: {
-    maxWidth: "700px",
+    maxWidth: "min(1200px, 98vw)",
     margin: "0 auto",
-    paddingLeft: "40px",
-    paddingRight: "40px",
+    paddingLeft: "clamp(16px, 4vw, 40px)",
+    paddingRight: "clamp(16px, 4vw, 40px)",
   },
 
   ctaTitle: {
-    fontSize: "clamp(2rem, 4vw, 3rem)",
+    fontSize: "clamp(1.75rem, 5vw, 3rem)",
     fontWeight: "700",
     color: "var(--text-primary)",
-    marginBottom: "20px",
+    marginBottom: "clamp(12px, 2vw, 20px)",
   },
 
   ctaText: {
-    fontSize: "1.2rem",
+    fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
     color: "var(--text-secondary)",
-    marginBottom: "40px",
+    marginBottom: "clamp(24px, 4vw, 40px)",
     lineHeight: "1.6",
   },
 
   ctaButton: {
-    padding: "18px 40px",
+    padding: "clamp(14px, 2.5vw, 18px) clamp(32px, 4vw, 40px)",
     background: "linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)",
     color: "white",
     border: "none",
     borderRadius: "var(--radius-md)",
-    fontSize: "1.1rem",
+    fontSize: "clamp(1rem, 2vw, 1.1rem)",
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
@@ -801,8 +804,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   footer: {
-    paddingTop: "60px",
-    paddingBottom: "40px",
+    paddingTop: "clamp(40px, 6vh, 60px)",
+    paddingBottom: "clamp(24px, 4vh, 40px)",
     paddingLeft: "0",
     paddingRight: "0",
     background: "rgba(10, 22, 40, 0.5)",
@@ -810,10 +813,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   footerContent: {
-    maxWidth: "1200px",
+    maxWidth: "min(1400px, 98vw)",
     margin: "0 auto",
-    paddingLeft: "40px",
-    paddingRight: "40px",
+    paddingLeft: "clamp(16px, 4vw, 40px)",
+    paddingRight: "clamp(16px, 4vw, 40px)",
     textAlign: "center" as const,
   },
 
@@ -821,12 +824,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "12px",
-    marginBottom: "20px",
+    gap: "clamp(8px, 1.5vw, 12px)",
+    marginBottom: "clamp(12px, 2vw, 20px)",
   },
 
   footerLogoText: {
-    fontSize: "1.25rem",
+    fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
     fontWeight: "700",
     background: "linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)",
     WebkitBackgroundClip: "text",
@@ -835,13 +838,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   footerText: {
-    fontSize: "0.9rem",
+    fontSize: "clamp(0.8rem, 1.8vw, 0.9rem)",
     color: "var(--text-secondary)",
-    marginBottom: "12px",
+    marginBottom: "clamp(8px, 1.5vw, 12px)",
   },
 
   footerCopy: {
-    fontSize: "0.8rem",
+    fontSize: "clamp(0.7rem, 1.5vw, 0.8rem)",
     color: "var(--text-muted)",
   },
 };

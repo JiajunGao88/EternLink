@@ -94,8 +94,7 @@ body::before {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  margin: 0;
 }
 
 code {

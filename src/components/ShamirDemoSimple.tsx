@@ -6,7 +6,6 @@
 import { useState } from 'react';
 import {
   splitPassword,
-  reconstructPassword,
   type PasswordShares
 } from '../utils/secretSharing';
 

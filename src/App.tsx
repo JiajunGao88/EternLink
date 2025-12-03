@@ -14,7 +14,7 @@ import {
 import { splitKey, reconstructKey, type KeyShares } from "./utils/secretSharing";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
 import LandingPage from "./components/LandingPage";
-import { registerFileHashSSS, verifyFileHash } from "./utils/api";
+import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain } from "./utils/api";
 
 // Default constants
 const DEFAULTS = {
@@ -64,6 +64,14 @@ function App() {
   
   // Decrypt mode state
   const [encryptedFile, setEncryptedFile] = useState<ArrayBuffer | null>(null);
+  const [userShare, setUserShare] = useState(""); // User's share (Share 1 or 2)
+  const [decryptFileHash, setDecryptFileHash] = useState(""); // File hash for blockchain lookup
+  const [blockchainShare3, setBlockchainShare3] = useState<string | null>(null); // Share 3 from blockchain
+  const [decryptStep, setDecryptStep] = useState<number>(0); // 0: idle, 1: loading file, 2: fetching share 3, 3: decrypting, 4: done
+  const [share3Info, setShare3Info] = useState<{ blockNumber?: number; timestamp?: number } | null>(null);
+  
+  // Legacy: manual 2-share input (for advanced users)
+  const [manualMode, setManualMode] = useState(false);
   const [shareA, setShareA] = useState("");
   const [shareB, setShareB] = useState("");
   
@@ -256,8 +264,95 @@ function App() {
     }
   };
 
-  // Decrypt file with 2 shares
-  const handleDecrypt = async () => {
+  // NEW: Decrypt with 1 share + auto-fetch Share 3 from blockchain
+  const handleDecryptAuto = async () => {
+    if (!encryptedFile) {
+      setStatus({ type: "error", message: "Please select an encrypted file" });
+      return;
+    }
+    if (!userShare.trim()) {
+      setStatus({ type: "error", message: "Please enter your key share" });
+      return;
+    }
+    if (!decryptFileHash.trim()) {
+      setStatus({ type: "error", message: "Please enter the file hash" });
+      return;
+    }
+
+    setLoading(true);
+    setStatus(null);
+    setDecryptStep(1);
+    setBlockchainShare3(null);
+    setShare3Info(null);
+
+    try {
+      // Step 1: Load and validate encrypted file
+      setDecryptStep(1);
+      setStatus({ type: "info", message: "Step 1/4: Loading encrypted file..." });
+      await new Promise(r => setTimeout(r, 500)); // Visual delay
+      
+      const mode = detectEncryptionMode(encryptedFile);
+      if (mode !== 'sss') {
+        setStatus({ type: "error", message: "This file uses password encryption, not SSS" });
+        setDecryptStep(0);
+        return;
+      }
+
+      // Step 2: Fetch Share 3 from blockchain
+      setDecryptStep(2);
+      setStatus({ type: "info", message: "Step 2/4: Retrieving Share 3 from blockchain..." });
+      
+      const blockchainResult = await getKeyShare3FromBlockchain(decryptFileHash.trim());
+      
+      if (!blockchainResult.success || !blockchainResult.keyShare3) {
+        setStatus({ type: "error", message: blockchainResult.error || "Share 3 not found on blockchain" });
+        setDecryptStep(0);
+        return;
+      }
+      
+      setBlockchainShare3(blockchainResult.keyShare3);
+      setShare3Info({
+        blockNumber: blockchainResult.blockNumber,
+        timestamp: blockchainResult.timestamp
+      });
+
+      // Step 3: Reconstruct key
+      setDecryptStep(3);
+      setStatus({ type: "info", message: "Step 3/4: Reconstructing encryption key..." });
+      await new Promise(r => setTimeout(r, 300)); // Visual delay
+      
+      const reconstructedKey = reconstructKey(userShare.trim(), blockchainResult.keyShare3);
+
+      // Step 4: Decrypt file
+      setDecryptStep(4);
+      setStatus({ type: "info", message: "Step 4/4: Decrypting file..." });
+      
+      const { iv, encrypted } = unpackEncryptedFileSSS(encryptedFile);
+      const decrypted = await decryptFileWithKey(encrypted, iv, reconstructedKey);
+
+      // Download decrypted file
+      const originalName = file?.name.replace('.enc', '') || 'decrypted_file';
+      const blob = new Blob([decrypted], { type: 'application/octet-stream' });
+      downloadFile(blob, originalName);
+
+      setStatus({
+        type: "success",
+        message: "File decrypted successfully!",
+      });
+    } catch (error: any) {
+      console.error(error);
+      setStatus({
+        type: "error",
+        message: "Decryption failed. Check your key share and file hash.",
+      });
+      setDecryptStep(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Legacy: Decrypt file with 2 manual shares (for advanced users)
+  const handleDecryptManual = async () => {
     if (!encryptedFile) {
       setStatus({ type: "error", message: "Please select an encrypted file" });
       return;
@@ -752,6 +847,49 @@ function App() {
             {/* DECRYPT MODE */}
             {appMode === 'decrypt' && (
               <>
+                {/* Mode Toggle: Auto vs Manual */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '8px', 
+                  marginBottom: '20px',
+                  background: 'var(--input-bg)',
+                  padding: '4px',
+                  borderRadius: '8px'
+                }}>
+                  <button
+                    onClick={() => setManualMode(false)}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      background: !manualMode ? 'var(--accent-primary)' : 'transparent',
+                      color: !manualMode ? 'white' : 'var(--text-secondary)',
+                    }}
+                  >
+                    ⛓️ Auto (1 Share + Blockchain)
+                  </button>
+                  <button
+                    onClick={() => setManualMode(true)}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      background: manualMode ? 'var(--accent-primary)' : 'transparent',
+                      color: manualMode ? 'white' : 'var(--text-secondary)',
+                    }}
+                  >
+                    🔧 Manual (2 Shares)
+                  </button>
+                </div>
+
                 <div style={styles.uploadArea}>
                   <input
                     type="file"
@@ -774,48 +912,211 @@ function App() {
                   </label>
                 </div>
 
-                {/* Share Inputs */}
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Key Share A</label>
-                  <textarea
-                    value={shareA}
-                    onChange={(e) => setShareA(e.target.value)}
-                    placeholder="Paste first key share (e.g., 801...)"
-                    style={{ ...styles.input, minHeight: '80px', fontFamily: 'monospace', fontSize: '12px' }}
-                  />
-                </div>
+                {/* AUTO MODE: 1 Share + Blockchain */}
+                {!manualMode && (
+                  <>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Your Key Share (Share 1 or 2)</label>
+                      <textarea
+                        value={userShare}
+                        onChange={(e) => setUserShare(e.target.value)}
+                        placeholder="Paste your key share (e.g., 801... or 802...)"
+                        style={{ ...styles.input, minHeight: '70px', fontFamily: 'monospace', fontSize: '12px' }}
+                      />
+                    </div>
 
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Key Share B</label>
-                  <textarea
-                    value={shareB}
-                    onChange={(e) => setShareB(e.target.value)}
-                    placeholder="Paste second key share (e.g., 802...)"
-                    style={{ ...styles.input, minHeight: '80px', fontFamily: 'monospace', fontSize: '12px' }}
-                  />
-                  <span style={styles.hint}>
-                    Enter any 2 of your 3 key shares to decrypt
-                  </span>
-                </div>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>File Hash (for blockchain lookup)</label>
+                      <input
+                        type="text"
+                        value={decryptFileHash}
+                        onChange={(e) => setDecryptFileHash(e.target.value)}
+                        placeholder="0x... (66 characters)"
+                        style={{ ...styles.input, fontFamily: 'monospace', fontSize: '12px' }}
+                      />
+                      <span style={styles.hint}>
+                        The file hash you received when encrypting. Share 3 will be retrieved from blockchain.
+                      </span>
+                    </div>
 
-                {/* Decrypt Button */}
-                <button
-                  onClick={handleDecrypt}
-                  disabled={loading || !encryptedFile || !shareA || !shareB}
-                  style={{
-                    ...styles.actionButton,
-                    ...styles.primaryAction,
-                    width: '100%',
-                    ...(loading || !encryptedFile || !shareA || !shareB ? styles.disabledButton : {})
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
-                    <rect x="5" y="9" width="10" height="8" rx="1" stroke="white" strokeWidth="1.5" fill="none"/>
-                    <path d="M7 9V6C7 4.34315 8.34315 3 10 3V3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5" strokeDasharray="2 2"/>
-                    <circle cx="10" cy="13" r="1" fill="white"/>
-                  </svg>
-                  {loading ? "Decrypting..." : "Decrypt File"}
-                </button>
+                    {/* Progress Steps Visualization */}
+                    {decryptStep > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        style={{
+                          marginBottom: '20px',
+                          padding: '16px',
+                          background: 'var(--input-bg)',
+                          borderRadius: '12px',
+                          border: '1px solid var(--input-border)',
+                        }}
+                      >
+                        <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: 'var(--text-primary)' }}>
+                          Decryption Progress
+                        </div>
+                        {[
+                          { step: 1, label: 'Loading encrypted file', icon: '📄' },
+                          { step: 2, label: 'Retrieving Share 3 from blockchain', icon: '⛓️' },
+                          { step: 3, label: 'Reconstructing encryption key', icon: '🔑' },
+                          { step: 4, label: 'Decrypting file', icon: '🔓' },
+                        ].map(({ step, label, icon }) => (
+                          <div
+                            key={step}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '8px 0',
+                              opacity: decryptStep >= step ? 1 : 0.4,
+                            }}
+                          >
+                            <div style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '14px',
+                              background: decryptStep > step ? 'var(--success)' : 
+                                         decryptStep === step ? 'var(--accent-primary)' : 
+                                         'var(--card-border)',
+                              color: decryptStep >= step ? 'white' : 'var(--text-muted)',
+                            }}>
+                              {decryptStep > step ? '✓' : icon}
+                            </div>
+                            <span style={{ 
+                              fontSize: '13px',
+                              color: decryptStep >= step ? 'var(--text-primary)' : 'var(--text-muted)',
+                              fontWeight: decryptStep === step ? '600' : '400',
+                            }}>
+                              {label}
+                              {decryptStep === step && loading && '...'}
+                            </span>
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+
+                    {/* Share 3 Retrieved Display */}
+                    {blockchainShare3 && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        style={{
+                          marginBottom: '20px',
+                          padding: '16px',
+                          background: 'rgba(16, 185, 129, 0.1)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          borderRadius: '12px',
+                        }}
+                      >
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px',
+                          marginBottom: '12px',
+                        }}>
+                          <span style={{ fontSize: '20px' }}>⛓️</span>
+                          <span style={{ 
+                            fontSize: '14px', 
+                            fontWeight: '600', 
+                            color: 'var(--success)' 
+                          }}>
+                            Share 3 Retrieved from Blockchain!
+                          </span>
+                        </div>
+                        <div style={{
+                          background: 'var(--input-bg)',
+                          padding: '10px',
+                          borderRadius: '6px',
+                          fontFamily: 'monospace',
+                          fontSize: '10px',
+                          wordBreak: 'break-all',
+                          color: 'var(--text-primary)',
+                          marginBottom: '8px',
+                        }}>
+                          {blockchainShare3.slice(0, 40)}...{blockchainShare3.slice(-20)}
+                        </div>
+                        {share3Info && (
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            📦 Block #{share3Info.blockNumber}
+                            {share3Info.timestamp && (
+                              <> · 🕐 {new Date(share3Info.timestamp * 1000).toLocaleString()}</>
+                            )}
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {/* Decrypt Button - Auto Mode */}
+                    <button
+                      onClick={handleDecryptAuto}
+                      disabled={loading || !encryptedFile || !userShare || !decryptFileHash}
+                      style={{
+                        ...styles.actionButton,
+                        ...styles.primaryAction,
+                        width: '100%',
+                        ...(loading || !encryptedFile || !userShare || !decryptFileHash ? styles.disabledButton : {})
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                        <rect x="5" y="9" width="10" height="8" rx="1" stroke="white" strokeWidth="1.5" fill="none"/>
+                        <path d="M7 9V6C7 4.34315 8.34315 3 10 3V3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5" strokeDasharray="2 2"/>
+                        <circle cx="10" cy="13" r="1" fill="white"/>
+                      </svg>
+                      {loading ? "Decrypting..." : "Decrypt with Blockchain"}
+                    </button>
+                  </>
+                )}
+
+                {/* MANUAL MODE: 2 Shares */}
+                {manualMode && (
+                  <>
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Key Share A</label>
+                      <textarea
+                        value={shareA}
+                        onChange={(e) => setShareA(e.target.value)}
+                        placeholder="Paste first key share (e.g., 801...)"
+                        style={{ ...styles.input, minHeight: '70px', fontFamily: 'monospace', fontSize: '12px' }}
+                      />
+                    </div>
+
+                    <div style={styles.inputGroup}>
+                      <label style={styles.label}>Key Share B</label>
+                      <textarea
+                        value={shareB}
+                        onChange={(e) => setShareB(e.target.value)}
+                        placeholder="Paste second key share (e.g., 802...)"
+                        style={{ ...styles.input, minHeight: '70px', fontFamily: 'monospace', fontSize: '12px' }}
+                      />
+                      <span style={styles.hint}>
+                        Enter any 2 of your 3 key shares to decrypt (no blockchain needed)
+                      </span>
+                    </div>
+
+                    {/* Decrypt Button - Manual Mode */}
+                    <button
+                      onClick={handleDecryptManual}
+                      disabled={loading || !encryptedFile || !shareA || !shareB}
+                      style={{
+                        ...styles.actionButton,
+                        ...styles.primaryAction,
+                        width: '100%',
+                        ...(loading || !encryptedFile || !shareA || !shareB ? styles.disabledButton : {})
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                        <rect x="5" y="9" width="10" height="8" rx="1" stroke="white" strokeWidth="1.5" fill="none"/>
+                        <path d="M7 9V6C7 4.34315 8.34315 3 10 3V3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5" strokeDasharray="2 2"/>
+                        <circle cx="10" cy="13" r="1" fill="white"/>
+                      </svg>
+                      {loading ? "Decrypting..." : "Decrypt File"}
+                    </button>
+                  </>
+                )}
               </>
             )}
 

@@ -3,7 +3,7 @@
  * Handles blockchain transactions using company wallet
  */
 
-// Contract ABI
+// Contract ABI (including events for querying keyShare3)
 const POE_ABI = [
   {
     "inputs": [
@@ -24,6 +24,19 @@ const POE_ABI = [
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+      { "indexed": true, "internalType": "bytes32", "name": "fileHash", "type": "bytes32" },
+      { "indexed": false, "internalType": "string", "name": "cipher", "type": "string" },
+      { "indexed": false, "internalType": "string", "name": "cid", "type": "string" },
+      { "indexed": false, "internalType": "uint256", "name": "size", "type": "uint256" },
+      { "indexed": false, "internalType": "string", "name": "mime", "type": "string" }
+    ],
+    "name": "FileRegistered",
+    "type": "event"
   }
 ];
 
@@ -144,6 +157,60 @@ async function checkFileExists(
 }
 
 /**
+ * Get keyShare3 (stored in cid field) from blockchain events
+ */
+async function getKeyShare3(
+  fileHash: string
+): Promise<{ success: boolean; keyShare3?: string; blockNumber?: number; timestamp?: number; error?: string }> {
+  try {
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, POE_ABI, provider);
+    
+    // First check if file exists
+    const exists = await contract.exists(fileHash);
+    if (!exists) {
+      return {
+        success: false,
+        error: 'File not found on blockchain'
+      };
+    }
+    
+    // Query FileRegistered events for this fileHash
+    const filter = contract.filters.FileRegistered(null, fileHash);
+    const events = await contract.queryFilter(filter);
+    
+    if (events.length === 0) {
+      return {
+        success: false,
+        error: 'Registration event not found'
+      };
+    }
+    
+    // Get the first (and should be only) registration event
+    const event = events[0];
+    const block = await event.getBlock();
+    
+    // Parse event data - cid contains keyShare3
+    // Event args: owner, fileHash, cipher, cid, size, mime
+    const args = (event as any).args;
+    const keyShare3 = args[3]; // cid is the 4th argument (index 3)
+    
+    return {
+      success: true,
+      keyShare3: keyShare3,
+      blockNumber: event.blockNumber,
+      timestamp: block?.timestamp
+    };
+  } catch (error: any) {
+    console.error('Get keyShare3 error:', error);
+    return {
+      success: false,
+      error: 'Failed to retrieve key share from blockchain'
+    };
+  }
+}
+
+/**
  * CORS headers
  */
 const corsHeaders = {
@@ -172,7 +239,8 @@ export default {
           endpoints: {
             health: '/health',
             register: '/api/register (POST)',
-            verify: '/api/verify/:fileHash (GET)'
+            verify: '/api/verify/:fileHash (GET)',
+            keyshare: '/api/keyshare/:fileHash (GET) - Retrieve Share 3 from blockchain'
           }
         }),
         { 
@@ -198,7 +266,7 @@ export default {
     // Register file hash
     if (path === '/api/register' && request.method === 'POST') {
       try {
-        const body = await request.json();
+        const body = await request.json() as { fileHash?: string; cipher?: string; cid?: string; size?: number; mime?: string };
         const { fileHash, cipher, cid, size, mime } = body;
         
         if (!fileHash) {
@@ -257,6 +325,40 @@ export default {
         return new Response(
           JSON.stringify(result),
           { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      } catch (error: any) {
+        return new Response(
+          JSON.stringify({ success: false, error: error.message }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
+
+    // Get keyShare3 from blockchain (for decryption)
+    if (path.startsWith('/api/keyshare/') && request.method === 'GET') {
+      try {
+        const fileHash = path.replace('/api/keyshare/', '');
+        
+        if (!fileHash) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'fileHash is required' }),
+            { 
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+        
+        const result = await getKeyShare3(fileHash);
+        return new Response(
+          JSON.stringify(result),
+          { 
+            status: result.success ? 200 : 404,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );

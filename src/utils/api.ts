@@ -125,3 +125,42 @@ export async function verifyFileHash(
   }
 }
 
+/**
+ * Retrieve keyShare3 from blockchain via backend API
+ * This is used for decryption - user provides 1 share, we get Share 3 from chain
+ */
+export async function getKeyShare3FromBlockchain(
+  fileHash: string
+): Promise<{ 
+  success: boolean; 
+  keyShare3?: string; 
+  blockNumber?: number;
+  timestamp?: number;
+  error?: string 
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/keyshare/${fileHash}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to retrieve key share',
+      };
+    }
+
+    return data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: 'Network error. Please try again',
+    };
+  }
+}
+

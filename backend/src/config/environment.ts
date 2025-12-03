@@ -42,6 +42,23 @@ export const config = {
   // Rate Limiting
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
   rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+
+  // SMS (Twilio)
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+    authToken: process.env.TWILIO_AUTH_TOKEN || '',
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
+  },
+
+  // Voice Recognition (Azure)
+  azure: {
+    speechKey: process.env.AZURE_SPEECH_KEY || '',
+    speechRegion: process.env.AZURE_SPEECH_REGION || 'eastus',
+  },
+
+  // 2FA
+  enable2FA: process.env.ENABLE_2FA === 'true',
+  twoFAIssuer: process.env['2FA_ISSUER'] || 'EternLink',
 };
 
 // Validate critical environment variables

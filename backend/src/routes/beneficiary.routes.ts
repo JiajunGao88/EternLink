@@ -9,9 +9,25 @@ import { authenticateToken } from '../middleware/auth.middleware';
 import { validateRequest, schemas } from '../middleware/validation.middleware';
 import Joi from 'joi';
 
+// Import new beneficiary account and death claim routes
+import beneficiaryAccountRoutes from './beneficiary-account.routes';
+import deathClaimRoutes from './death-claim.routes';
+
 const router = Router();
 
-// All routes require authentication
+// Beneficiary Account Management Routes (new system)
+// Endpoints: /api/beneficiary/account/*
+router.use('/account', beneficiaryAccountRoutes);
+
+// Death Claim Routes (new system)
+// Endpoints: /api/beneficiary/death-claim/*
+router.use('/death-claim', deathClaimRoutes);
+
+// ============================================
+// Legacy Heartbeat Beneficiary Routes (old system)
+// These routes manage beneficiaries in the heartbeat system
+// All routes below require authentication
+// ============================================
 router.use(authenticateToken);
 
 // Validation schemas
@@ -29,7 +45,7 @@ const updateBeneficiarySchema = Joi.object({
   relationship: Joi.string().max(100).optional().allow(null, ''),
 }).min(1);
 
-// POST /api/beneficiary - Add new beneficiary
+// POST /api/beneficiary - Add new beneficiary to heartbeat
 router.post('/', validateRequest(addBeneficiarySchema), addBeneficiary);
 
 // GET /api/beneficiary/:heartbeatId - Get all beneficiaries for a heartbeat

@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 
 interface LandingPageProps {
   onTryDemo: () => void;
+  onRegisterBeneficiary?: () => void;
 }
 
-export default function LandingPage({ onTryDemo }: LandingPageProps) {
+export default function LandingPage({ onTryDemo, onRegisterBeneficiary }: LandingPageProps) {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -54,6 +55,11 @@ export default function LandingPage({ onTryDemo }: LandingPageProps) {
             <button onClick={() => scrollToSection("security")} style={styles.navLink}>
               Security
             </button>
+            {onRegisterBeneficiary && (
+              <button onClick={onRegisterBeneficiary} style={styles.navLink}>
+                Beneficiary
+              </button>
+            )}
             <button onClick={onTryDemo} style={styles.navCtaButton}>
               Try Demo
             </button>

@@ -1,21 +1,18 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
-interface RegistrationPageProps {
-  onRegistrationComplete: (token: string, accountType: 'user' | 'beneficiary') => void;
+interface BeneficiaryRegistrationPageProps {
+  onRegistrationComplete: (token: string) => void;
   onBackToHome: () => void;
-  onLoginClick: () => void;
 }
 
-export default function RegistrationPage({
+export default function BeneficiaryRegistrationPage({
   onRegistrationComplete,
-  onBackToHome,
-  onLoginClick
-}: RegistrationPageProps) {
-  const [step, setStep] = useState<'selectType' | 'register' | 'verify'>('selectType');
-  const [accountType, setAccountType] = useState<'user' | 'beneficiary' | null>(null);
+  onBackToHome
+}: BeneficiaryRegistrationPageProps) {
+  const [step, setStep] = useState<'register' | 'verify'>('register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,11 +22,6 @@ export default function RegistrationPage({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [linkedUser, setLinkedUser] = useState<{ id: string; email: string } | null>(null);
-
-  const handleSelectAccountType = (type: 'user' | 'beneficiary') => {
-    setAccountType(type);
-    setStep('register');
-  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +38,7 @@ export default function RegistrationPage({
       return;
     }
 
-    if (accountType === 'beneficiary' && referCode.length !== 12) {
+    if (referCode.length !== 12) {
       setError('Refer code must be exactly 12 characters');
       return;
     }
@@ -54,20 +46,16 @@ export default function RegistrationPage({
     setLoading(true);
 
     try {
-      const endpoint = accountType === 'user'
-        ? `${API_BASE_URL}/registration/register`
-        : `${API_BASE_URL}/beneficiary/account/register`;
-
-      const body = accountType === 'user'
-        ? { email, password }
-        : { email, password, referCode: referCode.toUpperCase() };
-
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${API_BASE_URL}/beneficiary/account/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          email,
+          password,
+          referCode: referCode.toUpperCase(),
+        }),
       });
 
       const data = await response.json();
@@ -76,13 +64,8 @@ export default function RegistrationPage({
         throw new Error(data.error || 'Registration failed');
       }
 
-      if (accountType === 'beneficiary') {
-        setLinkedUser(data.linkedUser);
-        setSuccess(`Registration successful! You are now linked to user: ${data.linkedUser.email}. Please check your email for verification code.`);
-      } else {
-        setSuccess('Registration successful! Please check your email for verification code.');
-      }
-
+      setLinkedUser(data.linkedUser);
+      setSuccess(`Registration successful! You are now linked to user: ${data.linkedUser.email}. Please check your email for verification code.`);
       setStep('verify');
     } catch (err: any) {
       setError(err.message || 'Failed to register');
@@ -112,9 +95,9 @@ export default function RegistrationPage({
         throw new Error(data.error || 'Verification failed');
       }
 
-      setSuccess('Email verified successfully! Redirecting...');
+      setSuccess('Email verified successfully! Redirecting to beneficiary dashboard...');
       setTimeout(() => {
-        onRegistrationComplete(data.token, accountType!);
+        onRegistrationComplete(data.token);
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Failed to verify email');
@@ -158,6 +141,7 @@ export default function RegistrationPage({
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full"
       >
+        {/* Back Button */}
         <button
           onClick={onBackToHome}
           className="mb-6 flex items-center text-[#C0C8D4] hover:text-white transition-colors"
@@ -168,73 +152,19 @@ export default function RegistrationPage({
           Back to Home
         </button>
 
+        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-[#C0C8D4] to-[#8b9da8] bg-clip-text text-transparent">
-            {step === 'selectType' ? 'Create Account' : step === 'register' ? 'Register' : 'Verify Email'}
+            Beneficiary Registration
           </h1>
           <p className="text-[#8b96a8]">
-            {step === 'selectType' && 'Choose your account type to get started'}
-            {step === 'register' && accountType === 'user' && 'Create your user account'}
-            {step === 'register' && accountType === 'beneficiary' && 'Register as a beneficiary using a refer code'}
-            {step === 'verify' && 'Verify your email to complete registration'}
+            {step === 'register'
+              ? 'Register as a beneficiary using a refer code from a user account'
+              : 'Verify your email to complete registration'}
           </p>
         </div>
 
-        {step === 'selectType' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-4"
-          >
-            <button
-              onClick={() => handleSelectAccountType('user')}
-              className="w-full p-6 bg-[#1a2942]/50 backdrop-blur-sm rounded-2xl border border-[#C0C8D4]/10 hover:border-[#3DA288]/50 hover:bg-[#1a2942]/80 transition-all group"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-[#3DA288]/10 rounded-lg flex items-center justify-center group-hover:bg-[#3DA288]/20 transition-colors">
-                  <svg className="w-6 h-6 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <div className="flex-1 text-left">
-                  <h3 className="text-xl font-semibold text-[#C0C8D4] mb-2">User Account</h3>
-                  <p className="text-sm text-[#8b96a8]">
-                    Create a standard user account to manage your encrypted files and set up Dead Man's Switch protection
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleSelectAccountType('beneficiary')}
-              className="w-full p-6 bg-[#1a2942]/50 backdrop-blur-sm rounded-2xl border border-[#C0C8D4]/10 hover:border-[#C0C8D4]/50 hover:bg-[#1a2942]/80 transition-all group"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-[#C0C8D4]/10 rounded-lg flex items-center justify-center group-hover:bg-[#C0C8D4]/20 transition-colors">
-                  <svg className="w-6 h-6 text-[#C0C8D4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <div className="flex-1 text-left">
-                  <h3 className="text-xl font-semibold text-[#C0C8D4] mb-2">Beneficiary Account</h3>
-                  <p className="text-sm text-[#8b96a8]">
-                    Register as a beneficiary with a refer code to receive access to encrypted files after verification
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            <div className="mt-6 text-center">
-              <p className="text-[#8b96a8]">
-                Already have an account?{' '}
-                <button onClick={onLoginClick} className="text-[#3DA288] hover:text-[#C0C8D4] font-semibold transition-colors">
-                  Log in
-                </button>
-              </p>
-            </div>
-          </motion.div>
-        )}
-
+        {/* Registration Form */}
         {step === 'register' && (
           <motion.form
             initial={{ opacity: 0 }}
@@ -243,23 +173,7 @@ export default function RegistrationPage({
             className="bg-[#1a2942]/50 backdrop-blur-sm rounded-2xl p-8 border border-[#C0C8D4]/10"
           >
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                  accountType === 'user'
-                    ? 'bg-[#3DA288]/10 text-[#3DA288] border border-[#3DA288]/30'
-                    : 'bg-[#C0C8D4]/10 text-[#C0C8D4] border border-[#C0C8D4]/30'
-                }`}>
-                  {accountType === 'user' ? '👤 User Account' : '👥 Beneficiary Account'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setStep('selectType')}
-                  className="text-sm text-[#8b96a8] hover:text-[#C0C8D4] transition-colors"
-                >
-                  Change
-                </button>
-              </div>
-
+              {/* Email Input */}
               <div>
                 <label className="block text-sm font-medium text-[#C0C8D4] mb-2">
                   Email Address
@@ -274,26 +188,26 @@ export default function RegistrationPage({
                 />
               </div>
 
-              {accountType === 'beneficiary' && (
-                <div>
-                  <label className="block text-sm font-medium text-[#C0C8D4] mb-2">
-                    Refer Code
-                  </label>
-                  <input
-                    type="text"
-                    value={referCode}
-                    onChange={(e) => setReferCode(e.target.value.toUpperCase())}
-                    maxLength={12}
-                    className="w-full px-4 py-3 bg-[#0a1628] border border-[#C0C8D4]/20 rounded-lg text-white placeholder-[#8b96a8] focus:outline-none focus:border-[#C0C8D4] transition-colors font-mono tracking-wider"
-                    placeholder="XXXXXXXXXXXX"
-                    required
-                  />
-                  <p className="mt-2 text-xs text-[#8b96a8]">
-                    Enter the 12-character refer code provided by the user account
-                  </p>
-                </div>
-              )}
+              {/* Refer Code Input */}
+              <div>
+                <label className="block text-sm font-medium text-[#C0C8D4] mb-2">
+                  Refer Code
+                </label>
+                <input
+                  type="text"
+                  value={referCode}
+                  onChange={(e) => setReferCode(e.target.value.toUpperCase())}
+                  maxLength={12}
+                  className="w-full px-4 py-3 bg-[#0a1628] border border-[#C0C8D4]/20 rounded-lg text-white placeholder-[#8b96a8] focus:outline-none focus:border-[#C0C8D4] transition-colors font-mono tracking-wider"
+                  placeholder="XXXXXXXXXXXX"
+                  required
+                />
+                <p className="mt-2 text-xs text-[#8b96a8]">
+                  Enter the 12-character refer code provided by the user account
+                </p>
+              </div>
 
+              {/* Password Input */}
               <div>
                 <label className="block text-sm font-medium text-[#C0C8D4] mb-2">
                   Password
@@ -308,6 +222,7 @@ export default function RegistrationPage({
                 />
               </div>
 
+              {/* Confirm Password Input */}
               <div>
                 <label className="block text-sm font-medium text-[#C0C8D4] mb-2">
                   Confirm Password
@@ -322,6 +237,7 @@ export default function RegistrationPage({
                 />
               </div>
 
+              {/* Error Message */}
               {error && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -332,6 +248,7 @@ export default function RegistrationPage({
                 </motion.div>
               )}
 
+              {/* Success Message */}
               {success && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -342,30 +259,19 @@ export default function RegistrationPage({
                 </motion.div>
               )}
 
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full py-3 px-6 bg-gradient-to-r from-[#C0C8D4] to-[#8b9da8] text-[#0a1628] font-semibold rounded-lg hover:shadow-lg hover:shadow-[#C0C8D4]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Registering...' : 'Create Account'}
+                {loading ? 'Registering...' : 'Register as Beneficiary'}
               </button>
-
-              <div className="text-center">
-                <p className="text-sm text-[#8b96a8]">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={onLoginClick}
-                    className="text-[#3DA288] hover:text-[#C0C8D4] font-semibold transition-colors"
-                  >
-                    Log in
-                  </button>
-                </p>
-              </div>
             </div>
           </motion.form>
         )}
 
+        {/* Verification Form */}
         {step === 'verify' && (
           <motion.form
             initial={{ opacity: 0 }}
@@ -374,6 +280,7 @@ export default function RegistrationPage({
             className="bg-[#1a2942]/50 backdrop-blur-sm rounded-2xl p-8 border border-[#C0C8D4]/10"
           >
             <div className="space-y-6">
+              {/* Linked User Info */}
               {linkedUser && (
                 <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-sm text-blue-400">
@@ -382,6 +289,7 @@ export default function RegistrationPage({
                 </div>
               )}
 
+              {/* Verification Code Input */}
               <div>
                 <label className="block text-sm font-medium text-[#C0C8D4] mb-2">
                   Verification Code
@@ -400,6 +308,7 @@ export default function RegistrationPage({
                 </p>
               </div>
 
+              {/* Error Message */}
               {error && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -410,6 +319,7 @@ export default function RegistrationPage({
                 </motion.div>
               )}
 
+              {/* Success Message */}
               {success && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -420,6 +330,7 @@ export default function RegistrationPage({
                 </motion.div>
               )}
 
+              {/* Buttons */}
               <div className="space-y-3">
                 <button
                   type="submit"
@@ -442,15 +353,14 @@ export default function RegistrationPage({
           </motion.form>
         )}
 
-        {step === 'selectType' && (
-          <div className="mt-6 p-4 bg-[#1a2942]/30 border border-[#C0C8D4]/10 rounded-lg">
-            <h3 className="text-sm font-semibold text-[#C0C8D4] mb-2">Which account type should I choose?</h3>
-            <ul className="text-xs text-[#8b96a8] space-y-1">
-              <li><strong>User:</strong> If you want to protect your own crypto assets and files</li>
-              <li><strong>Beneficiary:</strong> If someone gave you a refer code to access their files</li>
-            </ul>
-          </div>
-        )}
+        {/* Info Box */}
+        <div className="mt-6 p-4 bg-[#1a2942]/30 border border-[#C0C8D4]/10 rounded-lg">
+          <h3 className="text-sm font-semibold text-[#C0C8D4] mb-2">What is a Beneficiary Account?</h3>
+          <p className="text-xs text-[#8b96a8]">
+            Beneficiary accounts are linked to user accounts via a refer code. As a beneficiary, you can
+            submit death claims for linked users and retrieve encrypted files after the verification process.
+          </p>
+        </div>
       </motion.div>
     </div>
   );

@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { prisma } from '../config/database';
 import { emailService } from './email.service';
+import { smsService } from './sms.service';
 import { config } from '../config/environment';
 import { logger } from '../utils/logger';
 
@@ -147,15 +148,26 @@ class AccountMonitorService {
         'phone'
       );
 
-      // TODO: Send SMS notification
-      // For now, just log it
-      if (user.phoneNumber) {
-        logger.info('Phone notification would be sent:', {
-          userId: user.id,
-          phoneNumber: user.phoneNumber,
-          daysSinceLogin,
-        });
-        // In production: integrate with Twilio, AWS SNS, etc.
+      // Send SMS notification
+      if (user.phoneNumber && user.phoneVerified) {
+        const smsResult = await smsService.sendInactivityNotification(
+          user.phoneNumber,
+          daysSinceLogin
+        );
+
+        if (smsResult.success) {
+          logger.info('SMS notification sent:', {
+            userId: user.id,
+            phoneNumber: user.phoneNumber,
+            messageId: smsResult.messageId,
+          });
+        } else {
+          logger.error('SMS notification failed:', {
+            userId: user.id,
+            phoneNumber: user.phoneNumber,
+            error: smsResult.error,
+          });
+        }
       }
 
       logger.info('Phone level notification sent:', {

@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { prisma } from '../config/database';
 import { emailService } from '../services/email.service';
+import { smsService } from '../services/sms.service';
+import { voiceService } from '../services/voice.service';
 import { logger } from '../utils/logger';
 
 const VERIFICATION_CODE_EXPIRY_MINUTES = 15;
@@ -134,12 +136,23 @@ export async function sendPhoneVerificationCode(req: AuthRequest, res: Response)
       },
     });
 
-    // TODO: Integrate with SMS service (Twilio, etc.)
-    // For now, log the code
-    logger.info('Phone verification code generated:', {
+    // Send SMS verification code
+    const smsResult = await smsService.sendVerificationCode(targetPhone, code);
+
+    if (!smsResult.success) {
+      logger.error('Failed to send SMS verification code:', {
+        userId,
+        phoneNumber: targetPhone,
+        error: smsResult.error,
+      });
+      // Still return success to prevent enumeration attacks
+      // User won't know if SMS failed, but code is still stored in DB
+    }
+
+    logger.info('Phone verification code sent:', {
       userId,
       phoneNumber: targetPhone,
-      code, // In production, remove this
+      messageId: smsResult.messageId,
     });
 
     res.json({
@@ -214,17 +227,31 @@ export async function uploadVoiceSignature(req: AuthRequest, res: Response): Pro
       return;
     }
 
-    // In production, you might want to:
-    // 1. Validate audio format
-    // 2. Extract voice features using ML model
-    // 3. Store features instead of raw audio for efficiency
+    // Create voice profile using Azure Speaker Recognition
+    const profileResult = await voiceService.createVoiceProfile(voiceData);
 
+    if (!profileResult.success) {
+      logger.error('Failed to create voice profile:', {
+        userId,
+        error: profileResult.error,
+      });
+      res.status(500).json({
+        error: 'Failed to create voice profile',
+        details: profileResult.error,
+      });
+      return;
+    }
+
+    // Store the profile ID in the database
     await prisma.user.update({
       where: { id: userId },
-      data: { voiceSignature: voiceData },
+      data: { voiceSignature: profileResult.profileId! },
     });
 
-    logger.info('Voice signature uploaded:', { userId });
+    logger.info('Voice signature uploaded:', {
+      userId,
+      profileId: profileResult.profileId,
+    });
 
     res.json({
       message: 'Voice signature uploaded successfully',
@@ -258,15 +285,19 @@ export async function verifyVoiceSignature(req: AuthRequest, res: Response): Pro
       return;
     }
 
-    // In production, use voice recognition ML model to compare
-    // For now, simple comparison (THIS IS NOT SECURE - USE ML IN PRODUCTION)
-    const similarityScore = calculateVoiceSimilarity(user.voiceSignature, voiceData);
+    // Verify voice using Azure Speaker Recognition
+    const verificationResult = await voiceService.verifyVoice(voiceData, user.voiceSignature);
 
-    if (similarityScore < 0.8) {
-      logger.warn('Voice verification failed:', { userId, similarityScore });
+    if (!verificationResult.success) {
+      logger.warn('Voice verification failed:', {
+        userId,
+        similarityScore: verificationResult.similarityScore,
+        error: verificationResult.error,
+      });
       res.status(401).json({
         error: 'Voice verification failed',
-        similarityScore,
+        similarityScore: verificationResult.similarityScore,
+        details: verificationResult.error,
       });
       return;
     }
@@ -300,58 +331,6 @@ export async function verifyVoiceSignature(req: AuthRequest, res: Response): Pro
     logger.error('Error verifying voice:', error);
     res.status(500).json({ error: 'Failed to verify voice' });
   }
-}
-
-/**
- * Calculate voice similarity (PLACEHOLDER - USE ML MODEL IN PRODUCTION)
- */
-function calculateVoiceSimilarity(signature1: string, signature2: string): number {
-  // This is a PLACEHOLDER
-  // In production, use:
-  // - Voice biometric SDK (e.g., Azure Speaker Recognition, AWS Transcribe)
-  // - ML model trained on voice features (MFCC, spectrograms)
-  // - Deep learning models like SpeakerNet or VGGVox
-
-  // For demo purposes, simple string comparison
-  if (signature1 === signature2) return 1.0;
-
-  // Calculate Levenshtein distance for demo
-  const maxLen = Math.max(signature1.length, signature2.length);
-  if (maxLen === 0) return 1.0;
-
-  const distance = levenshteinDistance(signature1.substring(0, 100), signature2.substring(0, 100));
-  return 1 - (distance / maxLen);
-}
-
-/**
- * Levenshtein distance (for demo only)
- */
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix = [];
-
-  for (let i = 0; i <= str2.length; i++) {
-    matrix[i] = [i];
-  }
-
-  for (let j = 0; j <= str1.length; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= str2.length; i++) {
-    for (let j = 1; j <= str1.length; j++) {
-      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
-      }
-    }
-  }
-
-  return matrix[str2.length][str1.length];
 }
 
 /**

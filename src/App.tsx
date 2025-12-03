@@ -19,6 +19,11 @@ import {
 // import ShamirDemoSimple from "./components/ShamirDemoSimple";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
 import LandingPage from "./components/LandingPage";
+import ProductLandingPage from "./components/ProductLandingPage";
+import BeneficiaryRegistrationPage from "./components/BeneficiaryRegistrationPage";
+import BeneficiaryDashboard from "./components/BeneficiaryDashboard";
+import LoginPage from "./components/LoginPage";
+import RegistrationPage from "./components/RegistrationPage";
 
 // Default Configuration
 const DEFAULTS = {
@@ -35,8 +40,14 @@ interface FileInfo {
 }
 
 function App() {
-  const [showLandingPage, setShowLandingPage] = useState(true);
+  const [showProductLanding, setShowProductLanding] = useState(true);
+  const [showLandingPage, setShowLandingPage] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [showBeneficiaryRegistration, setShowBeneficiaryRegistration] = useState(false);
+  const [showBeneficiaryDashboard, setShowBeneficiaryDashboard] = useState(false);
+  const [userAccountType, setUserAccountType] = useState<'user' | 'beneficiary' | null>(null);
   const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
   const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
   const [ipfsCid, setIpfsCid] = useState("");
@@ -52,9 +63,123 @@ function App() {
   const [fileHash, setFileHash] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
 
-  // Show Landing Page
+  // Show Product Landing Page (New Marketing Page)
+  if (showProductLanding) {
+    return (
+      <ProductLandingPage
+        onTryDemo={() => {
+          setShowProductLanding(false);
+          setShowLandingPage(true);
+        }}
+        onRegisterBeneficiary={() => {
+          setShowProductLanding(false);
+          setShowBeneficiaryRegistration(true);
+        }}
+        onLogin={() => {
+          setShowProductLanding(false);
+          setShowLogin(true);
+        }}
+      />
+    );
+  }
+
+  // Show Login Page
+  if (showLogin) {
+    return (
+      <LoginPage
+        onLoginSuccess={(token, user) => {
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('accountType', user.accountType);
+          setUserAccountType(user.accountType);
+          setShowLogin(false);
+
+          // Redirect based on account type
+          if (user.accountType === 'beneficiary') {
+            setShowBeneficiaryDashboard(true);
+          } else {
+            // For user accounts, go to main app
+            setShowDemo(true);
+          }
+        }}
+        onBackToHome={() => {
+          setShowLogin(false);
+          setShowProductLanding(true);
+        }}
+        onRegisterClick={() => {
+          setShowLogin(false);
+          setShowRegistration(true);
+        }}
+      />
+    );
+  }
+
+  // Show Registration Page
+  if (showRegistration) {
+    return (
+      <RegistrationPage
+        onRegistrationComplete={(token, accountType) => {
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('accountType', accountType);
+          setUserAccountType(accountType);
+          setShowRegistration(false);
+
+          // Redirect based on account type
+          if (accountType === 'beneficiary') {
+            setShowBeneficiaryDashboard(true);
+          } else {
+            // For user accounts, go to main app
+            setShowDemo(true);
+          }
+        }}
+        onBackToHome={() => {
+          setShowRegistration(false);
+          setShowProductLanding(true);
+        }}
+        onLoginClick={() => {
+          setShowRegistration(false);
+          setShowLogin(true);
+        }}
+      />
+    );
+  }
+
+  // Show Original Landing Page (Demo Page)
   if (showLandingPage) {
     return <LandingPage onTryDemo={() => setShowLandingPage(false)} />;
+  }
+
+  // Show Beneficiary Registration Page
+  if (showBeneficiaryRegistration) {
+    return (
+      <BeneficiaryRegistrationPage
+        onRegistrationComplete={(token) => {
+          // Store token and redirect to beneficiary dashboard
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('accountType', 'beneficiary');
+          setShowBeneficiaryRegistration(false);
+          setShowBeneficiaryDashboard(true);
+        }}
+        onBackToHome={() => {
+          setShowBeneficiaryRegistration(false);
+          setShowLandingPage(true);
+        }}
+      />
+    );
+  }
+
+  // Show Beneficiary Dashboard
+  if (showBeneficiaryDashboard) {
+    return (
+      <BeneficiaryDashboard
+        onLogout={() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('accountType');
+          setUserAccountType(null);
+          setShowBeneficiaryDashboard(false);
+          setShowProductLanding(true);
+        }}
+      />
+    );
   }
 
   // Show Shamir's Secret Sharing demo

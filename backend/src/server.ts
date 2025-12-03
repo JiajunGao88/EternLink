@@ -7,6 +7,7 @@ import { prisma, disconnectDatabase, isDatabaseConnected } from './config/databa
 import { logger } from './utils/logger';
 import { heartbeatService } from './services/heartbeat.service';
 import { accountMonitorService } from './services/account-monitor.service';
+import { deathClaimProcessorService } from './services/death-claim-processor.service';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -14,6 +15,7 @@ import heartbeatRoutes from './routes/heartbeat.routes';
 import beneficiaryRoutes from './routes/beneficiary.routes';
 import registrationRoutes from './routes/registration.routes';
 import accountRoutes from './routes/account.routes';
+import twofaRoutes from './routes/twofa.routes';
 
 // Validate environment configuration
 try {
@@ -72,6 +74,7 @@ app.get('/health', async (req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/registration', registrationRoutes);
 app.use('/api/account', accountRoutes);
+app.use('/api/2fa', twofaRoutes);
 app.use('/api/heartbeat', heartbeatRoutes);
 app.use('/api/beneficiary', beneficiaryRoutes);
 
@@ -111,6 +114,9 @@ async function startServer() {
     // Start account monitoring service
     accountMonitorService.start();
 
+    // Start death claim processor service
+    deathClaimProcessorService.start();
+
     // Start HTTP server
     const server = app.listen(config.port, () => {
       logger.info(`🚀 EternLink Backend Server started`, {
@@ -132,6 +138,9 @@ async function startServer() {
 
         // Stop account monitor service
         accountMonitorService.stop();
+
+        // Stop death claim processor service
+        deathClaimProcessorService.stop();
 
         // Disconnect database
         await disconnectDatabase();

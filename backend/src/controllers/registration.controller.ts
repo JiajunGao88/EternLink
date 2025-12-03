@@ -237,6 +237,18 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // Return special response indicating 2FA is required
+      // Frontend will then prompt for 2FA token
+      res.json({
+        message: '2FA verification required',
+        requires2FA: true,
+        userId: user.id, // Temporary ID for 2FA verification
+      });
+      return;
+    }
+
     // Update last login time
     await prisma.user.update({
       where: { id: user.id },
@@ -276,5 +288,226 @@ export async function login(req: Request, res: Response): Promise<void> {
   } catch (error) {
     logger.error('Error during login:', error);
     res.status(500).json({ error: 'Failed to login' });
+  }
+}
+
+/**
+ * Request password reset
+ * Sends a password reset code to the user's email
+ */
+export async function requestPasswordReset(req: Request, res: Response): Promise<void> {
+  try {
+    const { email } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    // Don't reveal if user exists (prevent enumeration attacks)
+    if (!user) {
+      logger.warn('Password reset requested for non-existent email:', { email });
+      res.json({
+        message: 'If an account exists with this email, a password reset code has been sent.',
+      });
+      return;
+    }
+
+    // Invalidate old password reset codes
+    await prisma.verificationCode.updateMany({
+      where: {
+        userId: user.id,
+        type: 'password_reset',
+        verified: false,
+      },
+      data: { verified: true }, // Mark as used to invalidate
+    });
+
+    // Generate new reset code
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MINUTES * 60 * 1000);
+
+    await prisma.verificationCode.create({
+      data: {
+        userId: user.id,
+        email: user.email,
+        code,
+        type: 'password_reset',
+        expiresAt,
+      },
+    });
+
+    // Send password reset email
+    await emailService.sendPasswordResetCode(user.email, code);
+
+    logger.info('Password reset code sent:', { userId: user.id, email });
+
+    res.json({
+      message: 'If an account exists with this email, a password reset code has been sent.',
+    });
+  } catch (error) {
+    logger.error('Error requesting password reset:', error);
+    res.status(500).json({ error: 'Failed to process password reset request' });
+  }
+}
+
+/**
+ * Verify password reset code
+ * Validates the reset code before allowing password change
+ */
+export async function verifyPasswordResetCode(req: Request, res: Response): Promise<void> {
+  try {
+    const { email, code } = req.body;
+
+    const verification = await prisma.verificationCode.findFirst({
+      where: {
+        email: email.toLowerCase(),
+        code,
+        type: 'password_reset',
+        verified: false,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!verification) {
+      res.status(400).json({ error: 'Invalid or expired reset code' });
+      return;
+    }
+
+    logger.info('Password reset code verified:', {
+      userId: verification.userId,
+      email,
+    });
+
+    res.json({
+      message: 'Reset code verified. You may now reset your password.',
+      resetToken: verification.id, // Use verification ID as one-time reset token
+    });
+  } catch (error) {
+    logger.error('Error verifying password reset code:', error);
+    res.status(500).json({ error: 'Failed to verify reset code' });
+  }
+}
+
+/**
+ * Reset password
+ * Changes the user's password after verifying the reset token
+ */
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+  try {
+    const { resetToken, newPassword } = req.body;
+
+    // Find the verification code by ID (resetToken)
+    const verification = await prisma.verificationCode.findFirst({
+      where: {
+        id: resetToken,
+        type: 'password_reset',
+        verified: false,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!verification) {
+      res.status(400).json({ error: 'Invalid or expired reset token' });
+      return;
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // Update user password
+    await prisma.user.update({
+      where: { id: verification.userId! },
+      data: { passwordHash },
+    });
+
+    // Mark verification as used
+    await prisma.verificationCode.update({
+      where: { id: verification.id },
+      data: { verified: true },
+    });
+
+    logger.info('Password reset successfully:', {
+      userId: verification.userId,
+      email: verification.email,
+    });
+
+    res.json({
+      message: 'Password reset successfully. You can now login with your new password.',
+    });
+  } catch (error) {
+    logger.error('Error resetting password:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+}
+
+/**
+ * Complete login after 2FA verification
+ * This endpoint is called after the user successfully verifies their 2FA token
+ */
+export async function complete2FALogin(req: Request, res: Response): Promise<void> {
+  try {
+    const { userId } = req.body;
+    const ipAddress = req.ip;
+    const userAgent = req.get('user-agent');
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    // Update last login time
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    // Record login history
+    await prisma.loginHistory.create({
+      data: {
+        userId: user.id,
+        ipAddress,
+        userAgent,
+        loginMethod: 'password_2fa',
+      },
+    });
+
+    logger.info('User logged in with 2FA:', { userId: user.id, email: user.email });
+
+    // Generate JWT token
+    const token = generateToken(user.id, user.email);
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        phoneNumber: user.phoneNumber,
+        phoneVerified: user.phoneVerified,
+        hasVoiceSignature: !!user.voiceSignature,
+        emailNotificationDays: user.emailNotificationDays,
+        phoneNotificationDays: user.phoneNotificationDays,
+        freezeDays: user.freezeDays,
+        twoFactorEnabled: user.twoFactorEnabled,
+      },
+    });
+  } catch (error) {
+    logger.error('Error completing 2FA login:', error);
+    res.status(500).json({ error: 'Failed to complete login' });
   }
 }

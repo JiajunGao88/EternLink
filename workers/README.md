@@ -1,6 +1,6 @@
 # EternLink Cloudflare Workers API
 
-This is the backend API service for EternLink, deployed on Cloudflare Workers
+This is the backend API service for EternLink, deployed on Cloudflare Workers.
 
 ## Setup
 

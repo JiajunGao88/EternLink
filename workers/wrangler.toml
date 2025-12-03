@@ -3,7 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 # Production environment
+# Note: When deploying with --env production, the worker name becomes "eternlink-api-production"
 [env.production]
+name = "eternlink-api-production"
 vars = { ENVIRONMENT = "production" }
 
 # Development environment

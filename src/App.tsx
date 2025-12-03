@@ -7,25 +7,17 @@ import {
   packEncryptedFile,
   downloadFile,
 } from "./utils/crypto";
-import {
-  connectWallet,
-  checkNetwork,
-  switchNetwork,
-  getContract,
-  registerFile,
-  checkFileExists,
-} from "./utils/contract";
-// import ShamirDemo from "./components/ShamirDemo";
-// import ShamirDemoSimple from "./components/ShamirDemoSimple";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
 import LandingPage from "./components/LandingPage";
+import { registerFileHash, verifyFileHash } from "./utils/api";
 
-// Default Configuration
+// Default constants
 const DEFAULTS = {
-  CONTRACT_ADDRESS: "0xYourPoEContractAddressHere", // Replace with your deployed contract address
-  CHAIN_ID: 84532, // Base Sepolia
   CIPHER: "AES-256-GCM+PBKDF2(250k, SHA-256)",
 };
+
+// Default explorer URL (Base Sepolia)
+const EXPLORER_URL = "https://sepolia.basescan.org";
 
 interface FileInfo {
   name: string;
@@ -34,12 +26,15 @@ interface FileInfo {
   content: ArrayBuffer;
 }
 
+/**
+ * Main application component.
+ * This version uses a backend API service to handle all blockchain transactions.
+ * Users don't need to connect wallets or interact with MetaMask.
+ * All blockchain operations are handled by the company's backend service.
+ */
 function App() {
   const [showLandingPage, setShowLandingPage] = useState(true);
   const [showDemo, setShowDemo] = useState(false);
-  const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
-  const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
-  const [ipfsCid, setIpfsCid] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
   const [password, setPassword] = useState("");
@@ -48,7 +43,6 @@ function App() {
     message: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [account, setAccount] = useState<string>("");
   const [fileHash, setFileHash] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
 
@@ -89,36 +83,6 @@ function App() {
     );
   }
 
-  // Connect Wallet
-  const handleConnectWallet = async () => {
-    try {
-      setStatus(null);
-      const provider = await connectWallet();
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
-      setAccount(address);
-
-      // Check Network
-      const isCorrectNetwork = await checkNetwork(provider, chainId);
-      if (!isCorrectNetwork) {
-        setStatus({
-          type: "error",
-          message: `Please switch to Chain ID ${chainId} (Base Sepolia)`,
-        });
-        await switchNetwork(chainId);
-      } else {
-        setStatus({
-          type: "success",
-          message: `Wallet Connected: ${address.slice(0, 6)}...${address.slice(-4)}`,
-        });
-      }
-    } catch (error: any) {
-      setStatus({
-        type: "error",
-        message: error.message || "Failed to connect wallet",
-      });
-    }
-  };
 
   // Handle File Selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,10 +122,6 @@ function App() {
       setStatus({ type: "error", message: "Please enter a password" });
       return;
     }
-    if (contractAddress === DEFAULTS.CONTRACT_ADDRESS) {
-      setStatus({ type: "error", message: "Please configure the contract address" });
-      return;
-    }
 
     setLoading(true);
     setStatus(null);
@@ -183,39 +143,24 @@ function App() {
       downloadFile(encryptedBlob, encryptedFileName);
       setStatus({ type: "info", message: "Encrypted file downloaded" });
 
-      // 4. Connect wallet and submit to blockchain
-      const provider = await connectWallet();
-      const isCorrectNetwork = await checkNetwork(provider, chainId);
-      if (!isCorrectNetwork) {
-        await switchNetwork(chainId);
-      }
-
-      const contract = getContract(contractAddress, provider);
-      const signer = await provider.getSigner();
-      const contractWithSigner = contract.connect(signer);
-
-      // 5. Register on contract
-      setStatus({ type: "info", message: "Submitting transaction to blockchain..." });
-      const tx = await registerFile(
-        contractWithSigner,
+      // 4. Register file hash on blockchain via backend API
+      setStatus({ type: "info", message: "Registering file hash on blockchain..." });
+      const result = await registerFileHash(
         hashHex,
         DEFAULTS.CIPHER,
-        ipfsCid || "",
+        "",
         fileInfo.size,
         fileInfo.type
       );
 
-      setTxHash(tx.hash);
-      setStatus({
-        type: "info",
-        message: `Transaction submitted: ${tx.hash}`,
-      });
+      if (!result.success) {
+        throw new Error(result.error || "Failed to register file hash");
+      }
 
-      // 6. Wait for confirmation
-      await tx.wait();
+      setTxHash(result.txHash || "");
       setStatus({
         type: "success",
-        message: `File successfully registered on blockchain! TX: ${tx.hash}`,
+        message: `File successfully registered on blockchain! Transaction: ${result.txHash?.slice(0, 10)}...${result.txHash?.slice(-8)}`,
       });
     } catch (error: any) {
       console.error(error);
@@ -234,10 +179,6 @@ function App() {
       setStatus({ type: "error", message: "Please select a file first" });
       return;
     }
-    if (contractAddress === DEFAULTS.CONTRACT_ADDRESS) {
-      setStatus({ type: "error", message: "Please configure the contract address" });
-      return;
-    }
 
     setLoading(true);
     setStatus(null);
@@ -247,14 +188,14 @@ function App() {
       const hash = await sha256(fileInfo.content);
       const hashHex = hex32(hash);
 
-      // Connect wallet
-      const provider = await connectWallet();
-      const contract = getContract(contractAddress, provider);
+      setStatus({ type: "info", message: "Verifying file on blockchain..." });
+      const result = await verifyFileHash(hashHex);
 
-      // Check if exists
-      const exists = await checkFileExists(contract, hashHex);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to verify file hash");
+      }
 
-      if (exists) {
+      if (result.exists) {
         setStatus({
           type: "success",
           message: "✅ File exists on blockchain!",
@@ -356,7 +297,7 @@ function App() {
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              🔐 Try Shamir Demo
+               Try Shamir Demo
             </button>
           </div>
         </div>
@@ -365,99 +306,11 @@ function App() {
 
       {/* Main Content */}
       <div style={styles.content}>
-        {/* Left Panel - Configuration */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          style={styles.leftPanel}
-        >
-          <div style={styles.card}>
-            <h3 style={styles.cardTitle}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
-                <path d="M10 2L3 6V10C3 14 6 17.5 10 19C14 17.5 17 14 17 10V6L10 2Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
-              </svg>
-              Blockchain Configuration
-            </h3>
-
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Contract Address</label>
-              <input
-                type="text"
-                value={contractAddress}
-                onChange={(e) => setContractAddress(e.target.value)}
-                placeholder="0x..."
-                style={styles.input}
-              />
-            </div>
-
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Chain ID</label>
-              <input
-                type="number"
-                value={chainId}
-                onChange={(e) => setChainId(Number(e.target.value))}
-                style={styles.input}
-              />
-              <span style={styles.hint}>Base Sepolia Testnet</span>
-            </div>
-
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>IPFS CID (Optional)</label>
-              <input
-                type="text"
-                value={ipfsCid}
-                onChange={(e) => setIpfsCid(e.target.value)}
-                placeholder="Qm..."
-                style={styles.input}
-              />
-            </div>
-
-            {/* Wallet Connection */}
-            <div style={{ marginTop: '24px' }}>
-              {!account ? (
-                <button onClick={handleConnectWallet} style={styles.primaryButton}>
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
-                    <rect x="3" y="6" width="14" height="10" rx="2" stroke="white" strokeWidth="1.5" fill="none"/>
-                    <path d="M6 6V5C6 3.34315 7.34315 2 9 2H11C12.6569 2 14 3.34315 14 5V6" stroke="white" strokeWidth="1.5"/>
-                    <circle cx="10" cy="11" r="1.5" fill="white"/>
-                  </svg>
-                  Connect MetaMask
-                </button>
-              ) : (
-                <div style={styles.connectedWallet}>
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
-                    <circle cx="10" cy="10" r="8" stroke="var(--success)" strokeWidth="1.5" fill="none"/>
-                    <path d="M6 10L9 13L14 7" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                  <span style={{ flex: 1 }}>
-                    {account.slice(0, 6)}...{account.slice(-4)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Info Card */}
-          <div style={{...styles.card, ...styles.infoCard}}>
-            <h4 style={styles.infoCardTitle}>How to Use</h4>
-            <ol style={styles.infoList}>
-              <li>Deploy ProofOfExistence.sol contract</li>
-              <li>Enter contract address and connect wallet</li>
-              <li>Select file and set encryption password</li>
-              <li>Encrypted file will be downloaded automatically</li>
-              <li>File hash will be registered on blockchain</li>
-              <li>Verify file existence anytime</li>
-            </ol>
-          </div>
-        </motion.div>
-
-        {/* Right Panel - File Operations */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          style={styles.rightPanel}
+          style={styles.primaryPanel}
         >
           <div style={styles.card}>
             <h3 style={styles.cardTitle}>
@@ -468,7 +321,6 @@ function App() {
               File Operations
             </h3>
 
-            {/* File Upload */}
             <div style={styles.uploadArea}>
               <input
                 type="file"
@@ -594,7 +446,7 @@ function App() {
                 <div style={styles.txRow}>
                   <span style={styles.txLabel}>Transaction Hash:</span>
                   <a
-                    href={`https://sepolia.basescan.org/tx/${txHash}`}
+                    href={`${EXPLORER_URL}/tx/${txHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={styles.txLink}
@@ -617,6 +469,24 @@ function App() {
             )}
           </div>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          style={styles.primaryPanel}
+        >
+          <div style={{ ...styles.card, ...styles.infoCard }}>
+            <h4 style={styles.infoCardTitle}>How to Use</h4>
+            <ol style={styles.infoList}>
+              <li>Select a .txt file you want to secure</li>
+              <li>Enter a strong encryption password (keep it safe!)</li>
+              <li>Click "Encrypt & Register" - your file will be encrypted and downloaded</li>
+              <li>The file hash will be automatically registered on the blockchain</li>
+              <li>Use "Verify on Chain" anytime to confirm your file's existence</li>
+            </ol>
+          </div>
+        </motion.div>
       </div>
 
       {/* Footer */}
@@ -633,7 +503,7 @@ function App() {
           EternLink · Blockchain-Based Proof of Existence System
         </p>
         <p style={styles.footerCopy}>
-          Secured with AES-256-GCM Encryption · Base Sepolia L2 Network
+          Secured with AES-256-GCM Encryption · Multi-Network Support
         </p>
       </motion.footer>
     </div>
@@ -678,23 +548,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   content: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(320px, 400px) 1fr',
-    gap: '24px',
-    maxWidth: '1400px',
+    maxWidth: 'min(800px, 95vw)',
     margin: '0 auto',
+    padding: '0 clamp(16px, 4vw, 40px)',
   },
 
-  leftPanel: {
+  primaryPanel: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '20px',
+    gap: '24px',
   },
 
-  rightPanel: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-  },
 
   card: {
     background: 'var(--card-bg)',
@@ -713,6 +577,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
   },
+
 
   inputGroup: {
     marginBottom: 'var(--spacing-lg)',
@@ -746,35 +611,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.75rem',
     color: 'var(--text-muted)',
     marginTop: 'var(--spacing-xs)',
-  },
-
-  primaryButton: {
-    width: '100%',
-    padding: '14px 24px',
-    background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: 'var(--radius-md)',
-    fontSize: '1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.3s ease',
-    boxShadow: 'var(--shadow-sm)',
-  },
-
-  connectedWallet: {
-    padding: '14px 20px',
-    background: 'rgba(16, 185, 129, 0.1)',
-    border: '1px solid rgba(16, 185, 129, 0.3)',
-    borderRadius: 'var(--radius-md)',
-    display: 'flex',
-    alignItems: 'center',
-    color: 'var(--success)',
-    fontSize: '0.95rem',
-    fontWeight: '600',
   },
 
   infoCard: {

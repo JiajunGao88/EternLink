@@ -1,7 +1,7 @@
 {
   "name": "eternlink-api",
-  "version": "1.0.0",
-  "description": "Backend API for EternLink blockchain registration",
+  "version": "2.0.0",
+  "description": "Backend API for EternLink v2 with SSS support",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

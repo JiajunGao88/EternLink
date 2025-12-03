@@ -167,7 +167,7 @@ export default {
       return new Response(
         JSON.stringify({ 
           service: 'EternLink API',
-          version: '1.0.0',
+          version: '2.0.0',
           wallet: COMPANY_WALLET_ADDRESS,
           endpoints: {
             health: '/health',

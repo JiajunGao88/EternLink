@@ -1,7 +1,7 @@
 {
   "name": "eternlink-workers",
-  "version": "1.0.0",
-  "description": "Cloudflare Workers API for EternLink",
+  "version": "2.0.0",
+  "description": "Cloudflare Workers API for EternLink v2 with SSS support",
   "main": "src/index.ts",
   "scripts": {
     "dev": "wrangler dev",

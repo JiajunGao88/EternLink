@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from '../config/environment';
 import { logger } from '../utils/logger';
 
@@ -39,8 +39,9 @@ export async function authenticateToken(
 }
 
 export function generateToken(userId: string, walletAddress: string): string {
+  // @ts-ignore - jwt.sign typing issue with string expiresIn
   return jwt.sign(
-    { userId, walletAddress } as JwtPayload,
+    { userId, walletAddress },
     config.jwtSecret,
     { expiresIn: config.jwtExpiresIn }
   );

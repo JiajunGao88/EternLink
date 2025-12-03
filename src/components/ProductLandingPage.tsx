@@ -1,13 +1,13 @@
-import React from "react";
 import { motion } from "framer-motion";
 
 interface ProductLandingPageProps {
   onTryDemo: () => void;
   onRegisterBeneficiary: () => void;
   onLogin: () => void;
+  onRegister: () => void;
 }
 
-export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, onLogin }: ProductLandingPageProps) {
+export default function ProductLandingPage({ onTryDemo, onLogin, onRegister }: ProductLandingPageProps) {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -490,7 +490,7 @@ export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, o
 
       {/* How It Works */}
       <section id="how-it-works" className="py-20 px-6 bg-[#1a2942]/30">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -510,18 +510,19 @@ export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, o
 
           <div className="relative">
             {/* Vertical Timeline Line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#C0C8D4]/20 via-[#3DA288]/40 to-[#C0C8D4]/20 transform -translate-x-1/2 hidden md:block" />
+            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-[#C0C8D4]/30 via-[#3DA288]/50 to-[#C0C8D4]/30 transform -translate-x-1/2 hidden md:block" />
 
-            {/* Step 1 - Inactivity Detected */}
+            {/* Step 1 - Inactivity Detected (Left text, Right icon) */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
               viewport={{ once: true }}
-              className="relative mb-20"
+              className="relative mb-24"
             >
-              <div className="md:grid md:grid-cols-2 md:gap-12 items-center">
-                <div className="md:text-right mb-8 md:mb-0">
+              <div className="md:grid md:grid-cols-[1fr_auto_1fr] md:gap-8 items-center">
+                {/* Left: Text Content */}
+                <div className="md:text-right mb-8 md:mb-0 md:pr-8">
                   <h3 className="text-2xl md:text-3xl font-bold text-[#C0C8D4] mb-3">
                     1. Inactivity Detected
                   </h3>
@@ -529,11 +530,18 @@ export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, o
                     Prolonged silence on the platform triggers the initial alert.
                   </p>
                 </div>
-                <div className="flex justify-center md:justify-start">
+
+                {/* Center: Timeline Node */}
+                <div className="hidden md:flex items-center justify-center relative z-10">
+                  <div className="w-6 h-6 bg-gradient-to-br from-[#C0C8D4] to-[#8b9da8] rounded-full border-4 border-[#0a1628]"></div>
+                </div>
+
+                {/* Right: Icon */}
+                <div className="flex justify-center md:justify-start md:pl-8">
                   <div className="relative">
                     <div className="absolute inset-0 bg-[#C0C8D4]/20 rounded-full blur-xl" />
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-[#C0C8D4] to-[#8b9da8] rounded-full flex items-center justify-center">
-                      <svg className="w-10 h-10 text-[#0a1628]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="relative w-24 h-24 bg-gradient-to-br from-[#C0C8D4] to-[#8b9da8] rounded-full flex items-center justify-center shadow-lg shadow-[#C0C8D4]/30">
+                      <svg className="w-12 h-12 text-[#0a1628]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
                     </div>
@@ -542,26 +550,34 @@ export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, o
               </div>
             </motion.div>
 
-            {/* Step 2 - Verification Attempts */}
+            {/* Step 2 - Verification Attempts (Left icon, Right text) */}
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               viewport={{ once: true }}
-              className="relative mb-20"
+              className="relative mb-24"
             >
-              <div className="md:grid md:grid-cols-2 md:gap-12 items-center">
-                <div className="flex justify-center md:justify-end md:order-1 mb-8 md:mb-0">
+              <div className="md:grid md:grid-cols-[1fr_auto_1fr] md:gap-8 items-center">
+                {/* Left: Icon */}
+                <div className="flex justify-center md:justify-end md:pr-8 mb-8 md:mb-0">
                   <div className="relative">
                     <div className="absolute inset-0 bg-[#3DA288]/20 rounded-full blur-xl" />
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-[#3DA288] to-[#2d8a6f] rounded-full flex items-center justify-center">
-                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="relative w-24 h-24 bg-gradient-to-br from-[#3DA288] to-[#2d8a6f] rounded-full flex items-center justify-center shadow-lg shadow-[#3DA288]/30">
+                      <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
                   </div>
                 </div>
-                <div className="md:order-0">
+
+                {/* Center: Timeline Node */}
+                <div className="hidden md:flex items-center justify-center relative z-10">
+                  <div className="w-6 h-6 bg-gradient-to-br from-[#3DA288] to-[#2d8a6f] rounded-full border-4 border-[#0a1628]"></div>
+                </div>
+
+                {/* Right: Text Content */}
+                <div className="md:text-left md:pl-8">
                   <h3 className="text-2xl md:text-3xl font-bold text-[#C0C8D4] mb-3">
                     2. Verification Attempts
                   </h3>
@@ -572,16 +588,17 @@ export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, o
               </div>
             </motion.div>
 
-            {/* Step 3 - Protocol Activation */}
+            {/* Step 3 - Protocol Activation (Left text, Right icon) */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
               viewport={{ once: true }}
-              className="relative mb-20"
+              className="relative mb-24"
             >
-              <div className="md:grid md:grid-cols-2 md:gap-12 items-center">
-                <div className="md:text-right mb-8 md:mb-0">
+              <div className="md:grid md:grid-cols-[1fr_auto_1fr] md:gap-8 items-center">
+                {/* Left: Text Content */}
+                <div className="md:text-right mb-8 md:mb-0 md:pr-8">
                   <h3 className="text-2xl md:text-3xl font-bold text-[#C0C8D4] mb-3">
                     3. Protocol Activation
                   </h3>
@@ -589,11 +606,18 @@ export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, o
                     If no response, the Platform Key (Key 3) is released securely.
                   </p>
                 </div>
-                <div className="flex justify-center md:justify-start">
+
+                {/* Center: Timeline Node */}
+                <div className="hidden md:flex items-center justify-center relative z-10">
+                  <div className="w-6 h-6 bg-gradient-to-br from-red-500 to-red-600 rounded-full border-4 border-[#0a1628]"></div>
+                </div>
+
+                {/* Right: Icon */}
+                <div className="flex justify-center md:justify-start md:pl-8">
                   <div className="relative">
                     <div className="absolute inset-0 bg-red-500/20 rounded-full blur-xl" />
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="relative w-24 h-24 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30">
+                      <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                       </svg>
                     </div>
@@ -602,7 +626,7 @@ export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, o
               </div>
             </motion.div>
 
-            {/* Step 4 - Asset Restoration */}
+            {/* Step 4 - Asset Restoration (Left icon, Right text) */}
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -610,18 +634,26 @@ export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, o
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="md:grid md:grid-cols-2 md:gap-12 items-center">
-                <div className="flex justify-center md:justify-end md:order-1 mb-8 md:mb-0">
+              <div className="md:grid md:grid-cols-[1fr_auto_1fr] md:gap-8 items-center">
+                {/* Left: Icon */}
+                <div className="flex justify-center md:justify-end md:pr-8 mb-8 md:mb-0">
                   <div className="relative">
                     <div className="absolute inset-0 bg-green-500/20 rounded-full blur-xl" />
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="relative w-24 h-24 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30">
+                      <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </div>
                 </div>
-                <div className="md:order-0">
+
+                {/* Center: Timeline Node */}
+                <div className="hidden md:flex items-center justify-center relative z-10">
+                  <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-full border-4 border-[#0a1628]"></div>
+                </div>
+
+                {/* Right: Text Content */}
+                <div className="md:text-left md:pl-8">
                   <h3 className="text-2xl md:text-3xl font-bold text-[#C0C8D4] mb-3">
                     4. Asset Restoration
                   </h3>
@@ -653,20 +685,12 @@ export default function ProductLandingPage({ onTryDemo, onRegisterBeneficiary, o
             <p className="text-xl text-[#8b96a8] mb-8">
               Try EternLink for free. No credit card required.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={onTryDemo}
-                className="px-10 py-4 bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white text-lg font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3DA288]/30 transition-all transform hover:scale-105"
-              >
-                Get Started Free
-              </button>
-              <button
-                onClick={onRegisterBeneficiary}
-                className="px-10 py-4 bg-[#1a2942] border border-[#C0C8D4]/30 text-[#C0C8D4] text-lg font-semibold rounded-xl hover:bg-[#1a2942]/80 transition-all"
-              >
-                Register as Beneficiary
-              </button>
-            </div>
+            <button
+              onClick={onRegister}
+              className="px-12 py-4 bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white text-lg font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3DA288]/30 transition-all transform hover:scale-105"
+            >
+              Get Started Free
+            </button>
           </motion.div>
         </div>
       </section>

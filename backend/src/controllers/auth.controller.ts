@@ -83,7 +83,11 @@ export async function verify(req: Request, res: Response): Promise<void> {
 
     if (!user) {
       user = await prisma.user.create({
-        data: { walletAddress },
+        data: {
+          walletAddress,
+          email: `${walletAddress}@wallet.eternlink.com`, // Generate a placeholder email
+          passwordHash: '', // No password for wallet-based auth
+        },
       });
       logger.info('New user created:', { userId: user.id, walletAddress });
     } else {
@@ -91,7 +95,7 @@ export async function verify(req: Request, res: Response): Promise<void> {
     }
 
     // Generate JWT token
-    const token = generateToken(user.id, user.walletAddress);
+    const token = generateToken(user.id, user.walletAddress!);
 
     res.json({
       token,

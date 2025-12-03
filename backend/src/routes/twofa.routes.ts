@@ -7,7 +7,7 @@ import {
   regenerateBackupCodes,
   get2FAStatus,
 } from '../controllers/twofa.controller';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticateToken } from '../middleware/auth.middleware';
 import { validateRequest } from '../middleware/validation.middleware';
 import Joi from 'joi';
 
@@ -37,21 +37,21 @@ const regenerateBackupCodesSchema = Joi.object({
 // All routes require authentication except verify2FALogin (used during login)
 
 // GET /api/2fa/status - Get 2FA status
-router.get('/status', authenticate, get2FAStatus);
+router.get('/status', authenticateToken, get2FAStatus);
 
 // POST /api/2fa/enable - Enable 2FA and generate QR code
-router.post('/enable', authenticate, enable2FA);
+router.post('/enable', authenticateToken, enable2FA);
 
 // POST /api/2fa/verify - Verify and activate 2FA
-router.post('/verify', authenticate, validateRequest(verify2FASchema), verify2FA);
+router.post('/verify', authenticateToken, validateRequest(verify2FASchema), verify2FA);
 
 // POST /api/2fa/disable - Disable 2FA
-router.post('/disable', authenticate, validateRequest(disable2FASchema), disable2FA);
+router.post('/disable', authenticateToken, validateRequest(disable2FASchema), disable2FA);
 
 // POST /api/2fa/verify-login - Verify 2FA token during login (no auth required)
 router.post('/verify-login', validateRequest(verify2FALoginSchema), verify2FALogin);
 
 // POST /api/2fa/regenerate-backup-codes - Regenerate backup codes
-router.post('/regenerate-backup-codes', authenticate, validateRequest(regenerateBackupCodesSchema), regenerateBackupCodes);
+router.post('/regenerate-backup-codes', authenticateToken, validateRequest(regenerateBackupCodesSchema), regenerateBackupCodes);
 
 export default router;

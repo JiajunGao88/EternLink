@@ -17,11 +17,32 @@ function generateVerificationCode(): string {
 }
 
 /**
+ * Generate a random 12-character refer code
+ */
+function generateReferCode(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 12; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+/**
  * Register a new user with email and password
  */
 export async function register(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password } = req.body;
+    const { email, password, accountType, referCode } = req.body;
+
+    // Validate account type
+    const validAccountTypes = ['user', 'beneficiary'];
+    const selectedAccountType = accountType || 'user';
+
+    if (!validAccountTypes.includes(selectedAccountType)) {
+      res.status(400).json({ error: 'Invalid account type. Must be "user" or "beneficiary"' });
+      return;
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -33,8 +54,51 @@ export async function register(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    // If beneficiary account, verify refer code
+    let linkedUser = null;
+    if (selectedAccountType === 'beneficiary') {
+      if (!referCode) {
+        res.status(400).json({ error: 'Refer code is required for beneficiary accounts' });
+        return;
+      }
+
+      // Find user with this refer code
+      linkedUser = await prisma.user.findUnique({
+        where: { referCode: referCode.toUpperCase() },
+      });
+
+      if (!linkedUser) {
+        res.status(400).json({ error: 'Invalid refer code' });
+        return;
+      }
+
+      if (linkedUser.accountType !== 'user') {
+        res.status(400).json({ error: 'Invalid refer code - not a user account' });
+        return;
+      }
+    }
+
     // Hash password
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // Generate refer code for user accounts
+    let userReferCode = null;
+    if (selectedAccountType === 'user') {
+      userReferCode = generateReferCode();
+
+      // Ensure uniqueness
+      let codeExists = true;
+      while (codeExists) {
+        const existing = await prisma.user.findUnique({
+          where: { referCode: userReferCode },
+        });
+        if (!existing) {
+          codeExists = false;
+        } else {
+          userReferCode = generateReferCode();
+        }
+      }
+    }
 
     // Create user
     const user = await prisma.user.create({
@@ -42,8 +106,21 @@ export async function register(req: Request, res: Response): Promise<void> {
         email: email.toLowerCase(),
         passwordHash,
         emailVerified: false,
+        accountType: selectedAccountType,
+        referCode: userReferCode,
       },
     });
+
+    // If beneficiary, create the link to the user
+    if (selectedAccountType === 'beneficiary' && linkedUser) {
+      await prisma.beneficiaryLink.create({
+        data: {
+          userId: linkedUser.id,
+          beneficiaryId: user.id,
+          status: 'active',
+        },
+      });
+    }
 
     // Generate verification code
     const code = generateVerificationCode();
@@ -62,13 +139,33 @@ export async function register(req: Request, res: Response): Promise<void> {
     // Send verification email
     await emailService.sendVerificationCode(user.email, code);
 
-    logger.info('User registered:', { userId: user.id, email: user.email });
+    logger.info('User registered:', {
+      userId: user.id,
+      email: user.email,
+      accountType: selectedAccountType,
+      referCode: userReferCode
+    });
 
-    res.status(201).json({
+    const response: any = {
       message: 'Registration successful. Please check your email for verification code.',
       userId: user.id,
       email: user.email,
-    });
+      accountType: selectedAccountType,
+    };
+
+    // Include refer code for user accounts
+    if (selectedAccountType === 'user') {
+      response.referCode = userReferCode;
+    }
+
+    // Include linked user info for beneficiary accounts
+    if (selectedAccountType === 'beneficiary' && linkedUser) {
+      response.linkedUser = {
+        email: linkedUser.email,
+      };
+    }
+
+    res.status(201).json(response);
   } catch (error) {
     logger.error('Error during registration:', error);
     res.status(500).json({ error: 'Failed to register user' });
@@ -127,6 +224,7 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
         id: verification.user!.id,
         email: verification.user!.email,
         emailVerified: true,
+        accountType: verification.user!.accountType,
       },
     });
   } catch (error) {

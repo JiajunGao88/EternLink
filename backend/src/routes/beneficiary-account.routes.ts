@@ -7,7 +7,7 @@ import {
   getLinkedUsers,
   revokeBeneficiaryLink,
 } from '../controllers/beneficiary-account.controller';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticateToken } from '../middleware/auth.middleware';
 import { validateRequest } from '../middleware/validation.middleware';
 import Joi from 'joi';
 
@@ -32,18 +32,18 @@ const revokeLinkSchema = Joi.object({
 router.post('/register', validateRequest(registerBeneficiarySchema), registerBeneficiary);
 
 // POST /api/beneficiary-account/generate-refer-code - Generate refer code for user (requires auth)
-router.post('/generate-refer-code', authenticate, generateReferCode);
+router.post('/generate-refer-code', authenticateToken, generateReferCode);
 
 // GET /api/beneficiary-account/refer-code - Get user's refer code (requires auth)
-router.get('/refer-code', authenticate, getReferCode);
+router.get('/refer-code', authenticateToken, getReferCode);
 
 // GET /api/beneficiary-account/linked-beneficiaries - Get linked beneficiaries for user (requires auth)
-router.get('/linked-beneficiaries', authenticate, getLinkedBeneficiaries);
+router.get('/linked-beneficiaries', authenticateToken, getLinkedBeneficiaries);
 
 // GET /api/beneficiary-account/linked-users - Get linked users for beneficiary (requires auth)
-router.get('/linked-users', authenticate, getLinkedUsers);
+router.get('/linked-users', authenticateToken, getLinkedUsers);
 
 // POST /api/beneficiary-account/revoke-link - Revoke beneficiary link (requires auth)
-router.post('/revoke-link', authenticate, validateRequest(revokeLinkSchema), revokeBeneficiaryLink);
+router.post('/revoke-link', authenticateToken, validateRequest(revokeLinkSchema), revokeBeneficiaryLink);
 
 export default router;

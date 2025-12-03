@@ -20,6 +20,11 @@ const registerSchema = Joi.object({
   password: Joi.string().min(8).required().messages({
     'string.min': 'Password must be at least 8 characters long',
   }),
+  accountType: Joi.string().valid('user', 'beneficiary').optional().default('user'),
+  referCode: Joi.string().length(12).optional().when('accountType', {
+    is: 'beneficiary',
+    then: Joi.required(),
+  }),
 });
 
 const verifyEmailSchema = Joi.object({

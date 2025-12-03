@@ -18,7 +18,6 @@ import {
 // import ShamirDemo from "./components/ShamirDemo";
 // import ShamirDemoSimple from "./components/ShamirDemoSimple";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
-import LandingPage from "./components/LandingPage";
 import ProductLandingPage from "./components/ProductLandingPage";
 import BeneficiaryRegistrationPage from "./components/BeneficiaryRegistrationPage";
 import BeneficiaryDashboard from "./components/BeneficiaryDashboard";
@@ -41,7 +40,6 @@ interface FileInfo {
 
 function App() {
   const [showProductLanding, setShowProductLanding] = useState(true);
-  const [showLandingPage, setShowLandingPage] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
@@ -69,7 +67,6 @@ function App() {
       <ProductLandingPage
         onTryDemo={() => {
           setShowProductLanding(false);
-          setShowLandingPage(true);
         }}
         onRegisterBeneficiary={() => {
           setShowProductLanding(false);
@@ -78,6 +75,10 @@ function App() {
         onLogin={() => {
           setShowProductLanding(false);
           setShowLogin(true);
+        }}
+        onRegister={() => {
+          setShowProductLanding(false);
+          setShowRegistration(true);
         }}
       />
     );
@@ -143,10 +144,6 @@ function App() {
     );
   }
 
-  // Show Original Landing Page (Demo Page)
-  if (showLandingPage) {
-    return <LandingPage onTryDemo={() => setShowLandingPage(false)} />;
-  }
 
   // Show Beneficiary Registration Page
   if (showBeneficiaryRegistration) {
@@ -161,7 +158,7 @@ function App() {
         }}
         onBackToHome={() => {
           setShowBeneficiaryRegistration(false);
-          setShowLandingPage(true);
+          setShowProductLanding(true);
         }}
       />
     );
@@ -435,7 +432,7 @@ function App() {
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <button
-              onClick={() => setShowLandingPage(true)}
+              onClick={() => setShowProductLanding(true)}
               style={{
                 padding: '12px 24px',
                 fontSize: '16px',

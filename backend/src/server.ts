@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { config, validateConfig } from './config/environment';
-import { prisma, disconnectDatabase, isDatabaseConnected } from './config/database';
+import { disconnectDatabase, isDatabaseConnected } from './config/database';
 import { logger } from './utils/logger';
 import { heartbeatService } from './services/heartbeat.service';
 import { accountMonitorService } from './services/account-monitor.service';
@@ -16,6 +16,7 @@ import beneficiaryRoutes from './routes/beneficiary.routes';
 import registrationRoutes from './routes/registration.routes';
 import accountRoutes from './routes/account.routes';
 import twofaRoutes from './routes/twofa.routes';
+import userManagementRoutes from './routes/user-management.routes';
 
 // Validate environment configuration
 try {
@@ -50,7 +51,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((req: Request, _res: Response, next: NextFunction) => {
   logger.http(`${req.method} ${req.path}`, {
     ip: req.ip,
     userAgent: req.get('user-agent'),
@@ -59,7 +60,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Health check endpoint
-app.get('/health', async (req: Request, res: Response) => {
+app.get('/health', async (_req: Request, res: Response) => {
   const dbConnected = await isDatabaseConnected();
 
   res.status(dbConnected ? 200 : 503).json({
@@ -77,14 +78,15 @@ app.use('/api/account', accountRoutes);
 app.use('/api/2fa', twofaRoutes);
 app.use('/api/heartbeat', heartbeatRoutes);
 app.use('/api/beneficiary', beneficiaryRoutes);
+app.use('/api/users', userManagementRoutes);
 
 // 404 handler
-app.use((req: Request, res: Response) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
 // Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error('Unhandled error:', {
     error: err.message,
     stack: err.stack,

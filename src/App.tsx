@@ -66,6 +66,9 @@ function App() {
   const [encryptedFile, setEncryptedFile] = useState<ArrayBuffer | null>(null);
   const [shareA, setShareA] = useState("");
   const [shareB, setShareB] = useState("");
+  
+  // State for share save confirmation
+  const [sharesSaved, setSharesSaved] = useState(false);
 
   // Show Landing Page
   if (showLandingPage) {
@@ -148,9 +151,6 @@ function App() {
       message: `Encrypted file loaded: ${selectedFile.name}`,
     });
   };
-
-  // State for confirmation
-  const [sharesSaved, setSharesSaved] = useState(false);
 
   // SSS Encrypt and Register
   const handleEncryptAndRegister = async () => {

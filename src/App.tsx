@@ -45,7 +45,7 @@ function App() {
   const [showRegistration, setShowRegistration] = useState(false);
   const [showBeneficiaryRegistration, setShowBeneficiaryRegistration] = useState(false);
   const [showBeneficiaryDashboard, setShowBeneficiaryDashboard] = useState(false);
-  const [userAccountType, setUserAccountType] = useState<'user' | 'beneficiary' | null>(null);
+  const [, setUserAccountType] = useState<'user' | 'beneficiary' | null>(null);
   const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
   const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
   const [ipfsCid, setIpfsCid] = useState("");

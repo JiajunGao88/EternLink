@@ -149,6 +149,9 @@ function App() {
     });
   };
 
+  // State for confirmation
+  const [sharesSaved, setSharesSaved] = useState(false);
+
   // SSS Encrypt and Register
   const handleEncryptAndRegister = async () => {
     if (!fileInfo) {
@@ -156,10 +159,23 @@ function App() {
       return;
     }
 
+    // SAFETY CHECK: If shares exist and not confirmed saved, warn user
+    if (keyShares && !sharesSaved) {
+      const confirmOverwrite = window.confirm(
+        "⚠️ WARNING: You have unsaved key shares!\n\n" +
+        "If you continue, the previous shares will be LOST FOREVER and that file will be UNRECOVERABLE.\n\n" +
+        "Are you sure you want to encrypt a new file?"
+      );
+      if (!confirmOverwrite) {
+        return;
+      }
+    }
+
     setLoading(true);
     setStatus(null);
     setKeyShares(null);
     setShowShares(false);
+    setSharesSaved(false);
 
     try {
       // 1. Calculate file hash
@@ -181,12 +197,20 @@ function App() {
       const shares = splitKey(randomKey);
       setKeyShares(shares);
 
-      // 5. Pack and download encrypted file
+      // 5. AUTO-SAVE Share 1 to localStorage (backup)
+      try {
+        localStorage.setItem(`eternlink_share1_${hashHex}`, shares.shareOne);
+        console.log('Share 1 auto-saved to localStorage');
+      } catch (e) {
+        console.warn('Failed to save Share 1 to localStorage:', e);
+      }
+
+      // 6. Pack and download encrypted file
       const encryptedBlob = packEncryptedFileSSS(encrypted, iv);
       const encryptedFileName = fileInfo.name + ".enc";
       downloadFile(encryptedBlob, encryptedFileName);
 
-      // 6. Register file hash + keyShare3 on blockchain
+      // 7. Register file hash + keyShare3 on blockchain
       setStatus({ type: "info", message: "Registering on blockchain..." });
       const result = await registerFileHashSSS(
         hashHex,
@@ -662,6 +686,63 @@ function App() {
                       color: 'var(--error)',
                     }}>
                       ⚠️ <strong>Important:</strong> Save Share 1 and Share 2 securely. You need any 2 of 3 shares to decrypt your file.
+                    </div>
+
+                    {/* Confirmation Button */}
+                    <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                      {!sharesSaved ? (
+                        <button
+                          onClick={() => {
+                            const confirmed = window.confirm(
+                              "Have you saved both Share 1 and Share 2?\n\n" +
+                              "• Share 1: For yourself\n" +
+                              "• Share 2: For your beneficiary\n\n" +
+                              "Once confirmed, you can safely encrypt another file."
+                            );
+                            if (confirmed) {
+                              setSharesSaved(true);
+                            }
+                          }}
+                          style={{
+                            padding: '14px 32px',
+                            fontSize: '15px',
+                            fontWeight: '600',
+                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                          }}
+                        >
+                          ✓ I Have Saved My Key Shares
+                        </button>
+                      ) : (
+                        <div style={{
+                          padding: '14px 32px',
+                          fontSize: '15px',
+                          fontWeight: '600',
+                          background: 'rgba(16, 185, 129, 0.2)',
+                          color: 'var(--success)',
+                          borderRadius: '8px',
+                          display: 'inline-block',
+                        }}>
+                          ✓ Shares Saved - You can now encrypt another file
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Auto-saved notice */}
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '10px',
+                      background: 'rgba(139, 157, 195, 0.1)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      color: 'var(--text-muted)',
+                      textAlign: 'center',
+                    }}>
+                      💾 Share 1 has been auto-saved to your browser. File hash: <code style={{ fontSize: '10px' }}>{fileHash.slice(0, 16)}...</code>
                     </div>
                   </motion.div>
                 )}

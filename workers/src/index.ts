@@ -51,9 +51,25 @@ async function registerFile(
   env: Env
 ): Promise<{ success: boolean; txHash?: string; blockNumber?: number; error?: string }> {
   try {
+    // Validate and clean private key
+    if (!env.COMPANY_WALLET_PRIVATE_KEY) {
+      throw new Error('COMPANY_WALLET_PRIVATE_KEY is not set');
+    }
+    
+    // Clean private key: remove whitespace, ensure it starts with 0x
+    let privateKey = env.COMPANY_WALLET_PRIVATE_KEY.trim();
+    if (!privateKey.startsWith('0x')) {
+      privateKey = '0x' + privateKey;
+    }
+    
+    // Validate private key format (should be 66 characters with 0x prefix)
+    if (privateKey.length !== 66) {
+      throw new Error(`Invalid private key length: ${privateKey.length} (expected 66 with 0x prefix)`);
+    }
+    
     // Connect to blockchain
     const provider = new ethers.JsonRpcProvider(RPC_URL);
-    const wallet = new ethers.Wallet(env.COMPANY_WALLET_PRIVATE_KEY, provider);
+    const wallet = new ethers.Wallet(privateKey, provider);
     
     // Get contract instance
     const contract = new ethers.Contract(CONTRACT_ADDRESS, POE_ABI, wallet);

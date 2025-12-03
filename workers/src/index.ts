@@ -63,7 +63,7 @@ async function registerFile(
     }
     
     // Validate private key format (should be 66 characters with 0x prefix)
-    if (privateKey.length !== 42) {
+    if (privateKey.length !== 66) {
       throw new Error(`Invalid private key length: ${privateKey.length} (expected 66 with 0x prefix)`);
     }
     

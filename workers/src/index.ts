@@ -121,6 +121,25 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    // Root path - API information
+    if (path === '/') {
+      return new Response(
+        JSON.stringify({ 
+          service: 'EternLink API',
+          version: '1.0.0',
+          wallet: COMPANY_WALLET_ADDRESS,
+          endpoints: {
+            health: '/health',
+            register: '/api/register (POST)',
+            verify: '/api/verify/:fileHash (GET)'
+          }
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Health check
     if (path === '/health' || path === '/api/health') {
       return new Response(

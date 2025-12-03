@@ -1,0 +1,11 @@
+{
+  "build": {
+    "command": "npm run build",
+    "output": "dist",
+    "root": "/"
+  },
+  "env": {
+    "VITE_API_BASE_URL": "https://api.eternlink.co"
+  }
+}
+

@@ -1,0 +1,21 @@
+name = "eternlink-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Production environment
+# Note: When deploying with --env production, the worker name becomes "eternlink-api-production"
+[env.production]
+name = "eternlink-api-production"
+vars = { ENVIRONMENT = "production" }
+
+# Development environment
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+# Note: Custom domains should be configured via Cloudflare Dashboard
+# Go to Workers & Pages > Settings > Triggers > Custom Domains
+# Add: api.eternlink.co
+
+# Secrets (set via: wrangler secret put COMPANY_WALLET_PRIVATE_KEY)
+# COMPANY_WALLET_PRIVATE_KEY - Your company wallet private key
+

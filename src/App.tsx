@@ -3,17 +3,22 @@ import { motion } from "framer-motion";
 import {
   sha256,
   hex32,
-  encryptFile,
-  packEncryptedFile,
+  generateRandomKey,
+  encryptFileWithKey,
+  decryptFileWithKey,
+  packEncryptedFileSSS,
+  unpackEncryptedFileSSS,
+  detectEncryptionMode,
   downloadFile,
 } from "./utils/crypto";
+import { splitKey, reconstructKey, type KeyShares } from "./utils/secretSharing";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
 import LandingPage from "./components/LandingPage";
-import { registerFileHash, verifyFileHash } from "./utils/api";
+import { registerFileHashSSS, verifyFileHash } from "./utils/api";
 
 // Default constants
 const DEFAULTS = {
-  CIPHER: "AES-256-GCM+PBKDF2(250k, SHA-256)",
+  CIPHER: "AES-256-GCM+SSS(2-of-3)",
 };
 
 // Default explorer URL (Base Sepolia)
@@ -27,17 +32,24 @@ interface FileInfo {
 }
 
 /**
- * Main application component.
- * This version uses a backend API service to handle all blockchain transactions.
- * Users don't need to connect wallets or interact with MetaMask.
- * All blockchain operations are handled by the company's backend service.
+ * Main application component with SSS (Shamir's Secret Sharing) integration.
+ * 
+ * Flow:
+ * 1. User uploads file
+ * 2. System generates random AES-256 key
+ * 3. File is encrypted with the key
+ * 4. Key is split into 3 shares (2-of-3 threshold)
+ * 5. Share 1: User keeps (displayed for download/print)
+ * 6. Share 2: Beneficiary keeps (QR code)
+ * 7. Share 3: Stored on blockchain
+ * 8. Encrypted file is downloaded to user
  */
 function App() {
   const [showLandingPage, setShowLandingPage] = useState(true);
   const [showDemo, setShowDemo] = useState(false);
+  const [appMode, setAppMode] = useState<'encrypt' | 'decrypt'>('encrypt');
   const [file, setFile] = useState<File | null>(null);
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
-  const [password, setPassword] = useState("");
   const [status, setStatus] = useState<{
     type: "info" | "success" | "error";
     message: string;
@@ -45,6 +57,15 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [fileHash, setFileHash] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
+  
+  // SSS shares state
+  const [keyShares, setKeyShares] = useState<KeyShares | null>(null);
+  const [showShares, setShowShares] = useState(false);
+  
+  // Decrypt mode state
+  const [encryptedFile, setEncryptedFile] = useState<ArrayBuffer | null>(null);
+  const [shareA, setShareA] = useState("");
+  const [shareB, setShareB] = useState("");
 
   // Show Landing Page
   if (showLandingPage) {
@@ -84,77 +105,98 @@ function App() {
   }
 
 
-  // Handle File Selection
+  // Handle File Selection (Encrypt mode)
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
-
-    // Only allow .txt files
-    if (!selectedFile.name.endsWith(".txt")) {
-      setStatus({
-        type: "error",
-        message: "Currently only .txt files are supported",
-      });
-      return;
-    }
 
     setFile(selectedFile);
     const content = await selectedFile.arrayBuffer();
     setFileInfo({
       name: selectedFile.name,
       size: selectedFile.size,
-      type: selectedFile.type || "text/plain",
+      type: selectedFile.type || "application/octet-stream",
       content,
     });
     setStatus({
       type: "info",
-      message: `File selected: ${selectedFile.name} (${selectedFile.size} bytes)`,
+      message: `File selected: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(2)} KB)`,
+    });
+    // Reset shares when new file selected
+    setKeyShares(null);
+    setShowShares(false);
+  };
+
+  // Handle Encrypted File Selection (Decrypt mode)
+  const handleEncryptedFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (!selectedFile.name.endsWith('.enc')) {
+      setStatus({
+        type: "error",
+        message: "Please select an .enc file",
+      });
+      return;
+    }
+
+    const content = await selectedFile.arrayBuffer();
+    setEncryptedFile(content);
+    setFile(selectedFile);
+    setStatus({
+      type: "info",
+      message: `Encrypted file loaded: ${selectedFile.name}`,
     });
   };
 
-  // Encrypt and Register
+  // SSS Encrypt and Register
   const handleEncryptAndRegister = async () => {
     if (!fileInfo) {
       setStatus({ type: "error", message: "Please select a file" });
       return;
     }
-    if (!password) {
-      setStatus({ type: "error", message: "Please enter a password" });
-      return;
-    }
 
     setLoading(true);
     setStatus(null);
+    setKeyShares(null);
+    setShowShares(false);
 
     try {
       // 1. Calculate file hash
+      setStatus({ type: "info", message: "Calculating hash..." });
       const hash = await sha256(fileInfo.content);
       const hashHex = hex32(hash);
       setFileHash(hashHex);
-      setStatus({ type: "info", message: "Calculating hash..." });
 
-      // 2. Encrypt file
-      const { encrypted, iv, salt } = await encryptFile(fileInfo.content, password);
-      setStatus({ type: "info", message: "Encrypting..." });
+      // 2. Generate random AES-256 key
+      setStatus({ type: "info", message: "Generating encryption key..." });
+      const randomKey = generateRandomKey();
 
-      // 3. Pack and download encrypted file
-      const encryptedBlob = packEncryptedFile(encrypted, iv, salt);
+      // 3. Encrypt file with random key
+      setStatus({ type: "info", message: "Encrypting file..." });
+      const { encrypted, iv } = await encryptFileWithKey(fileInfo.content, randomKey);
+
+      // 4. Split key into 3 shares (2-of-3 threshold)
+      setStatus({ type: "info", message: "Splitting key into shares..." });
+      const shares = splitKey(randomKey);
+      setKeyShares(shares);
+
+      // 5. Pack and download encrypted file
+      const encryptedBlob = packEncryptedFileSSS(encrypted, iv);
       const encryptedFileName = fileInfo.name + ".enc";
       downloadFile(encryptedBlob, encryptedFileName);
-      setStatus({ type: "info", message: "Encrypted file saved" });
 
-      // 4. Register file hash on blockchain via backend API
+      // 6. Register file hash + keyShare3 on blockchain
       setStatus({ type: "info", message: "Registering on blockchain..." });
-      const result = await registerFileHash(
+      const result = await registerFileHashSSS(
         hashHex,
         DEFAULTS.CIPHER,
-        "",
+        shares.shareThree, // Store Share 3 on blockchain
         fileInfo.size,
         fileInfo.type
       );
 
       if (!result.success) {
-        // Check if file already registered
         if (result.error?.includes('already registered')) {
           setStatus({
             type: "success",
@@ -166,14 +208,14 @@ function App() {
       }
 
       setTxHash(result.txHash || "");
+      setShowShares(true);
       setStatus({
         type: "success",
-        message: `Registered successfully! TX: ${result.txHash?.slice(0, 10)}...${result.txHash?.slice(-8)}`,
+        message: "File encrypted and registered! Save your key shares below.",
       });
     } catch (error: any) {
       console.error(error);
       const msg = error.message || "Operation failed";
-      // Make error messages user-friendly
       if (msg.includes('already registered')) {
         setStatus({
           type: "success",
@@ -185,6 +227,59 @@ function App() {
           message: msg,
         });
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Decrypt file with 2 shares
+  const handleDecrypt = async () => {
+    if (!encryptedFile) {
+      setStatus({ type: "error", message: "Please select an encrypted file" });
+      return;
+    }
+    if (!shareA || !shareB) {
+      setStatus({ type: "error", message: "Please enter both key shares" });
+      return;
+    }
+
+    setLoading(true);
+    setStatus(null);
+
+    try {
+      // 1. Detect encryption mode
+      const mode = detectEncryptionMode(encryptedFile);
+      if (mode !== 'sss') {
+        setStatus({ type: "error", message: "This file uses password encryption, not SSS" });
+        return;
+      }
+
+      // 2. Reconstruct key from 2 shares
+      setStatus({ type: "info", message: "Reconstructing key..." });
+      const reconstructedKey = reconstructKey(shareA.trim(), shareB.trim());
+
+      // 3. Unpack encrypted file
+      const { iv, encrypted } = unpackEncryptedFileSSS(encryptedFile);
+
+      // 4. Decrypt file
+      setStatus({ type: "info", message: "Decrypting..." });
+      const decrypted = await decryptFileWithKey(encrypted, iv, reconstructedKey);
+
+      // 5. Download decrypted file
+      const originalName = file?.name.replace('.enc', '') || 'decrypted_file';
+      const blob = new Blob([decrypted], { type: 'application/octet-stream' });
+      downloadFile(blob, originalName);
+
+      setStatus({
+        type: "success",
+        message: "File decrypted successfully!",
+      });
+    } catch (error: any) {
+      console.error(error);
+      setStatus({
+        type: "error",
+        message: "Decryption failed. Check your key shares.",
+      });
     } finally {
       setLoading(false);
     }
@@ -321,6 +416,50 @@ function App() {
         <p style={styles.subtitle}>Blockchain Proof of Existence · Eternal Protection for Your Digital Assets</p>
       </motion.div>
 
+      {/* Mode Toggle */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+        <div style={{
+          display: 'flex',
+          background: 'var(--card-bg)',
+          borderRadius: '12px',
+          padding: '4px',
+          border: '1px solid var(--card-border)'
+        }}>
+          <button
+            onClick={() => { setAppMode('encrypt'); setFile(null); setFileInfo(null); setEncryptedFile(null); setStatus(null); setKeyShares(null); setShowShares(false); }}
+            style={{
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'all 0.3s ease',
+              background: appMode === 'encrypt' ? 'var(--accent-primary)' : 'transparent',
+              color: appMode === 'encrypt' ? 'white' : 'var(--text-secondary)',
+            }}
+          >
+            🔒 Encrypt & Register
+          </button>
+          <button
+            onClick={() => { setAppMode('decrypt'); setFile(null); setFileInfo(null); setEncryptedFile(null); setStatus(null); setShareA(''); setShareB(''); }}
+            style={{
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'all 0.3s ease',
+              background: appMode === 'decrypt' ? 'var(--accent-primary)' : 'transparent',
+              color: appMode === 'decrypt' ? 'white' : 'var(--text-secondary)',
+            }}
+          >
+            🔓 Decrypt File
+          </button>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div style={styles.content}>
         <motion.div
@@ -335,89 +474,269 @@ function App() {
                 <path d="M4 4C4 2.89543 4.89543 2 6 2H11L16 7V16C16 17.1046 15.1046 18 14 18H6C4.89543 18 4 17.1046 4 16V4Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
                 <path d="M11 2V7H16" stroke="var(--accent-primary)" strokeWidth="1.5"/>
               </svg>
-              File Operations
+              {appMode === 'encrypt' ? 'Encrypt & Register File' : 'Decrypt File'}
             </h3>
 
-            <div style={styles.uploadArea}>
-              <input
-                type="file"
-                accept=".txt"
-                onChange={handleFileSelect}
-                style={styles.fileInput}
-                id="file-upload"
-              />
-              <label htmlFor="file-upload" style={styles.uploadLabel}>
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <path d="M24 8V32M24 8L16 16M24 8L32 16" stroke="var(--accent-primary)" strokeWidth="2.5" strokeLinecap="round"/>
-                  <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="var(--accent-secondary)" strokeWidth="2.5" strokeLinecap="round"/>
-                </svg>
-                <span style={styles.uploadText}>
-                  {file ? file.name : 'Click to select file or drag & drop here'}
-                </span>
-                {file && (
-                  <span style={styles.uploadHint}>
-                    {(file.size / 1024).toFixed(2)} KB
-                  </span>
+            {/* ENCRYPT MODE */}
+            {appMode === 'encrypt' && (
+              <>
+                <div style={styles.uploadArea}>
+                  <input
+                    type="file"
+                    onChange={handleFileSelect}
+                    style={styles.fileInput}
+                    id="file-upload"
+                  />
+                  <label htmlFor="file-upload" style={styles.uploadLabel}>
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                      <path d="M24 8V32M24 8L16 16M24 8L32 16" stroke="var(--accent-primary)" strokeWidth="2.5" strokeLinecap="round"/>
+                      <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="var(--accent-secondary)" strokeWidth="2.5" strokeLinecap="round"/>
+                    </svg>
+                    <span style={styles.uploadText}>
+                      {file ? file.name : 'Click to select file'}
+                    </span>
+                    {file && (
+                      <span style={styles.uploadHint}>
+                        {(file.size / 1024).toFixed(2)} KB
+                      </span>
+                    )}
+                    {!file && (
+                      <span style={styles.uploadHint}>
+                        Supports all file types
+                      </span>
+                    )}
+                  </label>
+                </div>
+
+                {/* SSS Info Banner */}
+                <div style={{
+                  background: 'rgba(139, 157, 195, 0.1)',
+                  border: '1px solid rgba(139, 157, 195, 0.3)',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  marginBottom: '20px',
+                }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                    <strong style={{ color: 'var(--accent-primary)' }}>🔐 2-of-3 Key Splitting</strong><br/>
+                    Your file will be encrypted with a random key, then the key is split into 3 shares.
+                    Any 2 shares can decrypt the file. No password needed!
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div style={styles.buttonGroup}>
+                  <button
+                    onClick={handleEncryptAndRegister}
+                    disabled={loading || !file}
+                    style={{
+                      ...styles.actionButton,
+                      ...styles.primaryAction,
+                      ...(loading || !file ? styles.disabledButton : {})
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                      <rect x="5" y="9" width="10" height="8" rx="1" stroke="white" strokeWidth="1.5" fill="none"/>
+                      <path d="M7 9V6C7 4.34315 8.34315 3 10 3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5"/>
+                      <circle cx="10" cy="13" r="1" fill="white"/>
+                    </svg>
+                    {loading ? "Processing..." : "Encrypt & Register"}
+                  </button>
+
+                  <button
+                    onClick={handleVerifyFile}
+                    disabled={loading || !file}
+                    style={{
+                      ...styles.actionButton,
+                      ...styles.secondaryAction,
+                      ...(loading || !file ? styles.disabledButton : {})
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                      <circle cx="9" cy="9" r="6" stroke="white" strokeWidth="1.5" fill="none"/>
+                      <path d="M14 14L18 18" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                      <path d="M7 9L8.5 10.5L12 7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    Verify on Chain
+                  </button>
+                </div>
+
+                {/* Key Shares Display */}
+                {showShares && keyShares && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      marginTop: '24px',
+                      padding: '20px',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: '12px',
+                    }}
+                  >
+                    <h4 style={{ color: 'var(--success)', marginBottom: '16px', fontSize: '16px' }}>
+                      🔑 Save Your Key Shares
+                    </h4>
+                    
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Share 1 (Keep for yourself)
+                      </div>
+                      <div style={{
+                        background: 'var(--input-bg)',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        wordBreak: 'break-all',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--input-border)',
+                      }}>
+                        {keyShares.shareOne}
+                      </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(keyShares.shareOne)}
+                        style={{
+                          marginTop: '8px',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          background: 'var(--accent-primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Copy Share 1
+                      </button>
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Share 2 (Give to beneficiary)
+                      </div>
+                      <div style={{
+                        background: 'var(--input-bg)',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        wordBreak: 'break-all',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--input-border)',
+                      }}>
+                        {keyShares.shareTwo}
+                      </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(keyShares.shareTwo)}
+                        style={{
+                          marginTop: '8px',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          background: 'var(--accent-primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Copy Share 2
+                      </button>
+                    </div>
+
+                    <div style={{
+                      padding: '12px',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      color: 'var(--info)',
+                    }}>
+                      <strong>Share 3</strong> is stored on blockchain. You can retrieve it anytime using the file hash.
+                    </div>
+
+                    <div style={{
+                      marginTop: '16px',
+                      padding: '12px',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      color: 'var(--error)',
+                    }}>
+                      ⚠️ <strong>Important:</strong> Save Share 1 and Share 2 securely. You need any 2 of 3 shares to decrypt your file.
+                    </div>
+                  </motion.div>
                 )}
-                {!file && (
-                  <span style={styles.uploadHint}>
-                    Supports .txt format
+              </>
+            )}
+
+            {/* DECRYPT MODE */}
+            {appMode === 'decrypt' && (
+              <>
+                <div style={styles.uploadArea}>
+                  <input
+                    type="file"
+                    accept=".enc"
+                    onChange={handleEncryptedFileSelect}
+                    style={styles.fileInput}
+                    id="encrypted-file-upload"
+                  />
+                  <label htmlFor="encrypted-file-upload" style={styles.uploadLabel}>
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                      <path d="M24 32V8M24 32L16 24M24 32L32 24" stroke="var(--accent-primary)" strokeWidth="2.5" strokeLinecap="round"/>
+                      <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="var(--accent-secondary)" strokeWidth="2.5" strokeLinecap="round"/>
+                    </svg>
+                    <span style={styles.uploadText}>
+                      {file ? file.name : 'Select encrypted file (.enc)'}
+                    </span>
+                    <span style={styles.uploadHint}>
+                      Upload the .enc file to decrypt
+                    </span>
+                  </label>
+                </div>
+
+                {/* Share Inputs */}
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Key Share A</label>
+                  <textarea
+                    value={shareA}
+                    onChange={(e) => setShareA(e.target.value)}
+                    placeholder="Paste first key share (e.g., 801...)"
+                    style={{ ...styles.input, minHeight: '80px', fontFamily: 'monospace', fontSize: '12px' }}
+                  />
+                </div>
+
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Key Share B</label>
+                  <textarea
+                    value={shareB}
+                    onChange={(e) => setShareB(e.target.value)}
+                    placeholder="Paste second key share (e.g., 802...)"
+                    style={{ ...styles.input, minHeight: '80px', fontFamily: 'monospace', fontSize: '12px' }}
+                  />
+                  <span style={styles.hint}>
+                    Enter any 2 of your 3 key shares to decrypt
                   </span>
-                )}
-              </label>
-            </div>
+                </div>
 
-            {/* Password Input */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Encryption Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter a strong password and keep it safe"
-                style={styles.input}
-              />
-              <span style={styles.hint}>
-                Password is used for local encryption and cannot be recovered if lost
-              </span>
-            </div>
-
-            {/* Action Buttons */}
-            <div style={styles.buttonGroup}>
-              <button
-                onClick={handleEncryptAndRegister}
-                disabled={loading || !file || !password}
-                style={{
-                  ...styles.actionButton,
-                  ...styles.primaryAction,
-                  ...(loading || !file || !password ? styles.disabledButton : {})
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
-                  <rect x="5" y="9" width="10" height="8" rx="1" stroke="white" strokeWidth="1.5" fill="none"/>
-                  <path d="M7 9V6C7 4.34315 8.34315 3 10 3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5"/>
-                  <circle cx="10" cy="13" r="1" fill="white"/>
-                </svg>
-                {loading ? "Processing..." : "Encrypt & Register"}
-              </button>
-
-              <button
-                onClick={handleVerifyFile}
-                disabled={loading || !file}
-                style={{
-                  ...styles.actionButton,
-                  ...styles.secondaryAction,
-                  ...(loading || !file ? styles.disabledButton : {})
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
-                  <circle cx="9" cy="9" r="6" stroke="white" strokeWidth="1.5" fill="none"/>
-                  <path d="M14 14L18 18" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                  <path d="M7 9L8.5 10.5L12 7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-                Verify on Chain
-              </button>
-            </div>
+                {/* Decrypt Button */}
+                <button
+                  onClick={handleDecrypt}
+                  disabled={loading || !encryptedFile || !shareA || !shareB}
+                  style={{
+                    ...styles.actionButton,
+                    ...styles.primaryAction,
+                    width: '100%',
+                    ...(loading || !encryptedFile || !shareA || !shareB ? styles.disabledButton : {})
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                    <rect x="5" y="9" width="10" height="8" rx="1" stroke="white" strokeWidth="1.5" fill="none"/>
+                    <path d="M7 9V6C7 4.34315 8.34315 3 10 3V3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5" strokeDasharray="2 2"/>
+                    <circle cx="10" cy="13" r="1" fill="white"/>
+                  </svg>
+                  {loading ? "Decrypting..." : "Decrypt File"}
+                </button>
+              </>
+            )}
 
             {/* Status Display */}
             {status && (
@@ -454,7 +773,7 @@ function App() {
             )}
 
             {/* Transaction Info */}
-            {txHash && (
+            {txHash && appMode === 'encrypt' && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -494,13 +813,28 @@ function App() {
           style={styles.primaryPanel}
         >
           <div style={{ ...styles.card, ...styles.infoCard }}>
-            <h4 style={styles.infoCardTitle}>How to Use</h4>
+            <h4 style={styles.infoCardTitle}>
+              {appMode === 'encrypt' ? 'How 2-of-3 Encryption Works' : 'How to Decrypt'}
+            </h4>
             <ol style={styles.infoList}>
-              <li>Select a .txt file you want to secure</li>
-              <li>Enter a strong encryption password (keep it safe!)</li>
-              <li>Click "Encrypt & Register" - your file will be encrypted and downloaded</li>
-              <li>The file hash will be automatically registered on the blockchain</li>
-              <li>Use "Verify on Chain" anytime to confirm your file's existence</li>
+              {appMode === 'encrypt' ? (
+                <>
+                  <li>Select any file you want to secure</li>
+                  <li>Click "Encrypt & Register" - a random key encrypts your file</li>
+                  <li>The key is split into 3 shares (2-of-3 threshold)</li>
+                  <li><strong>Share 1:</strong> Keep for yourself</li>
+                  <li><strong>Share 2:</strong> Give to your beneficiary</li>
+                  <li><strong>Share 3:</strong> Stored on blockchain</li>
+                  <li>Any 2 shares can decrypt the file</li>
+                </>
+              ) : (
+                <>
+                  <li>Upload your encrypted .enc file</li>
+                  <li>Enter any 2 of your 3 key shares</li>
+                  <li>Click "Decrypt File" to recover original file</li>
+                  <li>The decrypted file will be downloaded automatically</li>
+                </>
+              )}
             </ol>
           </div>
         </motion.div>

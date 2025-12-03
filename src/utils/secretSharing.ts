@@ -1,15 +1,15 @@
 /**
  * Shamir's Secret Sharing Utility
  *
- * Splits passwords into multiple shares using Shamir's Secret Sharing scheme.
- * Threshold: 2/3 (any 2 shares can reconstruct the original password)
+ * Splits AES keys into multiple shares using Shamir's Secret Sharing scheme.
+ * Threshold: 2/3 (any 2 shares can reconstruct the original key)
  *
  * Security Properties:
- * - Share 1: Stored on user's device (localStorage)
- * - Share 2: Given to beneficiary (offline/paper backup)
- * - Share 3: Embedded in encrypted file metadata
+ * - Share 1: User keeps (device/paper backup)
+ * - Share 2: Given to beneficiary (offline/paper/QR code)
+ * - Share 3: Stored on blockchain
  *
- * Single share alone reveals ZERO information about the password.
+ * Single share alone reveals ZERO information about the key.
  */
 
 // Declare global secrets variable (loaded from HTML script tag)
@@ -23,7 +23,16 @@ declare const secrets: {
 };
 
 /**
- * Share distribution model
+ * Share distribution model for AES key
+ */
+export interface KeyShares {
+  shareOne: string;    // User keeps (device/paper)
+  shareTwo: string;    // Beneficiary gets (offline/QR)
+  shareThree: string;  // Stored on blockchain
+}
+
+/**
+ * Legacy: Share distribution model for passwords
  */
 export interface PasswordShares {
   shareOne: string;    // User keeps (device)
@@ -32,7 +41,70 @@ export interface PasswordShares {
 }
 
 /**
- * Split a password into 3 shares (threshold: 2)
+ * Split an AES-256 key into 3 shares (threshold: 2)
+ * 
+ * @param keyHex - 64-character hex string (256-bit AES key)
+ * @returns Object containing 3 shares
+ *
+ * @example
+ * const shares = splitKey("a1b2c3d4..."); // 64 hex chars
+ * // shares.shareOne = "801abc..." (hex string)
+ * // shares.shareTwo = "802def..." (hex string)
+ * // shares.shareThree = "803ghi..." (hex string)
+ */
+export function splitKey(keyHex: string): KeyShares {
+  if (!keyHex || keyHex.length !== 64) {
+    throw new Error('Key must be exactly 64 hex characters (256 bits)');
+  }
+
+  // Validate hex format
+  if (!/^[0-9a-fA-F]+$/.test(keyHex)) {
+    throw new Error('Key must be a valid hex string');
+  }
+
+  // Generate 3 shares with threshold of 2
+  // secrets.js works with hex strings directly
+  const shares = secrets.share(keyHex, 3, 2);
+
+  if (shares.length !== 3) {
+    throw new Error('Failed to generate exactly 3 shares');
+  }
+
+  return {
+    shareOne: shares[0],
+    shareTwo: shares[1],
+    shareThree: shares[2]
+  };
+}
+
+/**
+ * Reconstruct AES key from any 2 shares
+ *
+ * @param shareA - First share (hex string)
+ * @param shareB - Second share (hex string)
+ * @returns Original 64-character hex key
+ */
+export function reconstructKey(shareA: string, shareB: string): string {
+  if (!shareA || !shareB) {
+    throw new Error('Both shares are required for reconstruction');
+  }
+
+  // Validate share format
+  if (!isValidShare(shareA) || !isValidShare(shareB)) {
+    throw new Error('Invalid share format');
+  }
+
+  try {
+    // Combine the two shares
+    const keyHex = secrets.combine([shareA, shareB]);
+    return keyHex;
+  } catch (error) {
+    throw new Error('Failed to reconstruct key: ' + (error as Error).message);
+  }
+}
+
+/**
+ * Legacy: Split a password into 3 shares (threshold: 2)
  *
  * @param password - Master password to split
  * @returns Object containing 3 shares

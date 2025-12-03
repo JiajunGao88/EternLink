@@ -115,7 +115,7 @@ function App() {
   // Encrypt and Register
   const handleEncryptAndRegister = async () => {
     if (!fileInfo) {
-      setStatus({ type: "error", message: "Please select a file first" });
+      setStatus({ type: "error", message: "Please select a file" });
       return;
     }
     if (!password) {
@@ -131,20 +131,20 @@ function App() {
       const hash = await sha256(fileInfo.content);
       const hashHex = hex32(hash);
       setFileHash(hashHex);
-      setStatus({ type: "info", message: "File hash calculated" });
+      setStatus({ type: "info", message: "Calculating hash..." });
 
       // 2. Encrypt file
       const { encrypted, iv, salt } = await encryptFile(fileInfo.content, password);
-      setStatus({ type: "info", message: "File encryption completed" });
+      setStatus({ type: "info", message: "Encrypting..." });
 
       // 3. Pack and download encrypted file
       const encryptedBlob = packEncryptedFile(encrypted, iv, salt);
       const encryptedFileName = fileInfo.name + ".enc";
       downloadFile(encryptedBlob, encryptedFileName);
-      setStatus({ type: "info", message: "Encrypted file downloaded" });
+      setStatus({ type: "info", message: "Encrypted file saved" });
 
       // 4. Register file hash on blockchain via backend API
-      setStatus({ type: "info", message: "Registering file hash on blockchain..." });
+      setStatus({ type: "info", message: "Registering on blockchain..." });
       const result = await registerFileHash(
         hashHex,
         DEFAULTS.CIPHER,
@@ -154,20 +154,37 @@ function App() {
       );
 
       if (!result.success) {
-        throw new Error(result.error || "Failed to register file hash");
+        // Check if file already registered
+        if (result.error?.includes('already registered')) {
+          setStatus({
+            type: "success",
+            message: "This file is already registered on blockchain",
+          });
+          return;
+        }
+        throw new Error(result.error || "Registration failed");
       }
 
       setTxHash(result.txHash || "");
       setStatus({
         type: "success",
-        message: `File successfully registered on blockchain! Transaction: ${result.txHash?.slice(0, 10)}...${result.txHash?.slice(-8)}`,
+        message: `Registered successfully! TX: ${result.txHash?.slice(0, 10)}...${result.txHash?.slice(-8)}`,
       });
     } catch (error: any) {
       console.error(error);
-      setStatus({
-        type: "error",
-        message: error.message || "Encryption or registration failed",
-      });
+      const msg = error.message || "Operation failed";
+      // Make error messages user-friendly
+      if (msg.includes('already registered')) {
+        setStatus({
+          type: "success",
+          message: "This file is already registered on blockchain",
+        });
+      } else {
+        setStatus({
+          type: "error",
+          message: msg,
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -176,7 +193,7 @@ function App() {
   // Verify File Existence
   const handleVerifyFile = async () => {
     if (!fileInfo) {
-      setStatus({ type: "error", message: "Please select a file first" });
+      setStatus({ type: "error", message: "Please select a file" });
       return;
     }
 
@@ -188,28 +205,28 @@ function App() {
       const hash = await sha256(fileInfo.content);
       const hashHex = hex32(hash);
 
-      setStatus({ type: "info", message: "Verifying file on blockchain..." });
+      setStatus({ type: "info", message: "Verifying..." });
       const result = await verifyFileHash(hashHex);
 
       if (!result.success) {
-        throw new Error(result.error || "Failed to verify file hash");
+        throw new Error(result.error || "Verification failed");
       }
 
       if (result.exists) {
         setStatus({
           type: "success",
-          message: "✅ File exists on blockchain!",
+          message: "✓ File exists on blockchain",
         });
       } else {
         setStatus({
-          type: "error",
-          message: "❌ File does not exist on blockchain",
+          type: "info",
+          message: "File not found on blockchain",
         });
       }
     } catch (error: any) {
       setStatus({
         type: "error",
-        message: error.message || "Verification failed",
+        message: "Verification failed. Please try again",
       });
     } finally {
       setLoading(false);

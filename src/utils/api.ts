@@ -35,7 +35,7 @@ export async function registerFileHash(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || 'Failed to register file hash',
+        error: data.error || 'Registration failed',
       };
     }
 
@@ -43,7 +43,7 @@ export async function registerFileHash(
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || 'Network error',
+      error: 'Network error. Please try again',
     };
   }
 }
@@ -67,7 +67,7 @@ export async function verifyFileHash(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || 'Failed to verify file hash',
+        error: data.error || 'Verification failed',
       };
     }
 
@@ -75,7 +75,7 @@ export async function verifyFileHash(
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || 'Network error',
+      error: 'Network error. Please try again',
     };
   }
 }

@@ -87,9 +87,34 @@ async function registerFile(
     };
   } catch (error: any) {
     console.error('Registration error:', error);
+    
+    // Parse error message for user-friendly response
+    const errorMsg = error.message || '';
+    
+    if (errorMsg.includes('already registered')) {
+      return {
+        success: false,
+        error: 'File already registered on blockchain'
+      };
+    }
+    
+    if (errorMsg.includes('insufficient funds')) {
+      return {
+        success: false,
+        error: 'Insufficient funds for transaction'
+      };
+    }
+    
+    if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
+      return {
+        success: false,
+        error: 'Network error. Please try again'
+      };
+    }
+    
     return {
       success: false,
-      error: error.message || 'Failed to register file hash'
+      error: 'Registration failed. Please try again'
     };
   }
 }
@@ -113,7 +138,7 @@ async function checkFileExists(
     console.error('Check exists error:', error);
     return {
       success: false,
-      error: error.message || 'Failed to check file existence'
+      error: 'Verification failed. Please try again'
     };
   }
 }

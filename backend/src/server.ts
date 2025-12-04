@@ -13,6 +13,7 @@ import { deathClaimProcessorService } from './services/death-claim-processor.ser
 import authRoutes from './routes/auth.routes';
 import heartbeatRoutes from './routes/heartbeat.routes';
 import beneficiaryRoutes from './routes/beneficiary.routes';
+import beneficiaryAccountRoutes from './routes/beneficiary-account.routes';
 import registrationRoutes from './routes/registration.routes';
 import accountRoutes from './routes/account.routes';
 import twofaRoutes from './routes/twofa.routes';
@@ -78,6 +79,7 @@ app.use('/api/account', accountRoutes);
 app.use('/api/2fa', twofaRoutes);
 app.use('/api/heartbeat', heartbeatRoutes);
 app.use('/api/beneficiary', beneficiaryRoutes);
+app.use('/api/beneficiary-account', beneficiaryAccountRoutes);
 app.use('/api/users', userManagementRoutes);
 
 // 404 handler

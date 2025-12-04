@@ -75,6 +75,17 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
   const [selectedUserForClaim, setSelectedUserForClaim] = useState<LinkedUser | null>(null);
   const [showClaimDetails, setShowClaimDetails] = useState(false);
 
+  const getDaysSinceJoin = () => {
+    if (linkedUsers.length > 0) {
+      const oldestLink = linkedUsers.reduce((oldest, current) =>
+        new Date(current.linkedAt) < new Date(oldest.linkedAt) ? current : oldest
+      );
+      const days = Math.floor((Date.now() - new Date(oldestLink.linkedAt).getTime()) / (1000 * 60 * 60 * 24));
+      return days;
+    }
+    return 0;
+  };
+
   useEffect(() => {
     fetchLinkedUsers();
     fetchDeathClaims();
@@ -229,22 +240,41 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#1a2942] to-[#0a1628] text-white p-6">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#1a2942] to-[#0a1628] text-white p-5">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-[#C0C8D4] to-[#8b9da8] bg-clip-text text-transparent">
-              Beneficiary Dashboard
-            </h1>
-            <p className="text-[#8b96a8] mt-2">Manage linked users and death claims</p>
+        <div className="mb-10 pt-5">
+          <div className="flex justify-between items-center max-w-7xl mx-auto">
+            <div>
+              <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-[#C0C8D4] to-[#3DA288] bg-clip-text text-transparent"
+                  style={{
+                    fontSize: '2.5rem',
+                    fontWeight: '700',
+                    margin: 0,
+                    marginBottom: '12px',
+                  }}>
+                Welcome Back
+              </h1>
+              <p className="text-[#C0C8D4] text-lg m-0" style={{
+                fontSize: '1.1rem',
+                opacity: 0.9
+              }}>
+                EternLink have been protecting linked users for {getDaysSinceJoin()} days.
+              </p>
+            </div>
+            <button
+              onClick={onLogout}
+              className="px-6 py-3 rounded-lg font-semibold transition-all"
+              style={{
+                background: 'rgba(192, 200, 212, 0.1)',
+                border: '1px solid rgba(192, 200, 212, 0.3)',
+                color: '#C0C8D4',
+                backdropFilter: 'blur(10px)',
+              }}
+            >
+              Logout
+            </button>
           </div>
-          <button
-            onClick={onLogout}
-            className="px-6 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
-          >
-            Logout
-          </button>
         </div>
 
         {/* Alert Messages */}
@@ -254,7 +284,16 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400"
+              style={{
+                padding: '16px 20px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                color: '#ef4444',
+                marginBottom: '20px',
+                maxWidth: '1400px',
+                margin: '0 auto 20px auto',
+              }}
             >
               {error}
             </motion.div>
@@ -264,7 +303,16 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400"
+              style={{
+                padding: '16px 20px',
+                background: 'rgba(61, 162, 136, 0.1)',
+                border: '1px solid rgba(61, 162, 136, 0.3)',
+                borderRadius: '8px',
+                color: '#3DA288',
+                marginBottom: '20px',
+                maxWidth: '1400px',
+                margin: '0 auto 20px auto',
+              }}
             >
               {success}
             </motion.div>
@@ -272,24 +320,38 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
         </AnimatePresence>
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-3 mb-6 max-w-7xl mx-auto">
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'users'
-                ? 'bg-gradient-to-r from-[#C0C8D4] to-[#8b9da8] text-[#0a1628]'
-                : 'bg-[#1a2942]/50 text-[#C0C8D4] border border-[#C0C8D4]/20'
-            }`}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'users' ? 'rgba(61, 162, 136, 0.2)' : 'rgba(192, 200, 212, 0.05)',
+              border: activeTab === 'users' ? '1px solid #3DA288' : '1px solid rgba(192, 200, 212, 0.2)',
+              borderRadius: '8px',
+              color: activeTab === 'users' ? '#3DA288' : '#C0C8D4',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              backdropFilter: 'blur(10px)',
+              boxShadow: activeTab === 'users' ? '0 0 20px rgba(61, 162, 136, 0.3)' : 'none',
+            }}
           >
             Linked Users ({linkedUsers.length})
           </button>
           <button
             onClick={() => setActiveTab('claims')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'claims'
-                ? 'bg-gradient-to-r from-[#C0C8D4] to-[#8b9da8] text-[#0a1628]'
-                : 'bg-[#1a2942]/50 text-[#C0C8D4] border border-[#C0C8D4]/20'
-            }`}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'claims' ? 'rgba(61, 162, 136, 0.2)' : 'rgba(192, 200, 212, 0.05)',
+              border: activeTab === 'claims' ? '1px solid #3DA288' : '1px solid rgba(192, 200, 212, 0.2)',
+              borderRadius: '8px',
+              color: activeTab === 'claims' ? '#3DA288' : '#C0C8D4',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              backdropFilter: 'blur(10px)',
+              boxShadow: activeTab === 'claims' ? '0 0 20px rgba(61, 162, 136, 0.3)' : 'none',
+            }}
           >
             Death Claims ({deathClaims.length})
           </button>
@@ -317,7 +379,15 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
                       key={link.linkId}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="bg-[#1a2942]/50 backdrop-blur-sm rounded-xl p-6 border border-[#C0C8D4]/10 hover:border-[#C0C8D4]/30 transition-all"
+                      style={{
+                        background: 'rgba(192, 200, 212, 0.05)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '12px',
+                        padding: '24px',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                        border: '1px solid rgba(192, 200, 212, 0.1)',
+                        transition: 'all 0.3s ease',
+                      }}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div>
@@ -339,7 +409,19 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
                           setSelectedUserForClaim(link);
                           setShowClaimModal(true);
                         }}
-                        className="w-full py-2 px-4 bg-gradient-to-r from-[#C0C8D4] to-[#8b9da8] text-[#0a1628] font-semibold rounded-lg hover:shadow-lg hover:shadow-[#C0C8D4]/20 transition-all"
+                        style={{
+                          width: '100%',
+                          padding: '14px 24px',
+                          background: 'linear-gradient(to right, #3DA288, #2d8a6f)',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: 'white',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          fontSize: '1rem',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 15px rgba(61, 162, 136, 0.3)',
+                        }}
                       >
                         Submit Death Claim
                       </button>

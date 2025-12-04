@@ -44,244 +44,129 @@ export default function LoginPage({ onLoginSuccess, onBackToHome, onRegisterClic
   };
 
   return (
-    <div style={styles.container}>
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#1a2942] to-[#0a1628] text-white">
       {/* Header */}
-      <div style={styles.header}>
-        <button onClick={onBackToHome} style={styles.backButton}>
-          ← Back to Home
-        </button>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/80 backdrop-blur-md border-b border-[#C0C8D4]/10"
+      >
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <button
+            onClick={onBackToHome}
+            className="px-4 py-2 border border-[#C0C8D4]/30 text-[#C0C8D4] hover:bg-[#C0C8D4]/10 hover:border-[#C0C8D4]/50 rounded-lg transition-all"
+          >
+            ← Back to Home
+          </button>
+        </div>
+      </motion.div>
 
       {/* Content */}
-      <div style={styles.content}>
+      <div className="min-h-screen flex items-center justify-center px-6 pt-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          style={styles.card}
+          className="w-full max-w-md"
         >
-          {/* Logo */}
-          <div style={styles.logoContainer}>
-            <svg width="60" height="60" viewBox="0 0 48 48" fill="none">
-              <path
-                d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
-                stroke="var(--accent-primary)"
-                strokeWidth="2.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12 24H18L21 18L24 30L27 20L30 24H36"
-                stroke="var(--accent-primary)"
-                strokeWidth="2.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <h1 style={styles.title}>Welcome Back</h1>
-            <p style={styles.subtitle}>Log in to your EternLink account</p>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div style={styles.errorMessage}>
-              <span>⚠️</span> {error}
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleLogin} style={styles.form}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={styles.input}
-                placeholder="you@example.com"
-              />
+          <div className="bg-gradient-to-br from-[#1a2942]/80 to-[#0a1628]/60 backdrop-blur-xl border border-[#C0C8D4]/20 rounded-2xl p-10 shadow-2xl">
+            {/* Logo */}
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <path
+                    d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
+                    stroke="#C0C8D4"
+                    strokeWidth="2.5"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M12 24H18L21 18L24 30L27 20L30 24H36"
+                    stroke="#3DA288"
+                    strokeWidth="2.5"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="text-2xl font-bold bg-gradient-to-r from-[#C0C8D4] to-[#3DA288] bg-clip-text text-transparent">
+                  EternLink
+                </span>
+              </div>
+              <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-[#C0C8D4] to-white bg-clip-text text-transparent">
+                Welcome Back
+              </h1>
+              <p className="text-[#8b96a8]">Log in to your EternLink account</p>
             </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={styles.input}
-                placeholder="Enter your password"
-              />
-            </div>
+            {/* Error Message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-2"
+              >
+                <span>⚠️</span> {error}
+              </motion.div>
+            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                ...styles.submitButton,
-                opacity: loading ? 0.6 : 1,
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {loading ? 'Logging in...' : 'Log In'}
-            </button>
-          </form>
+            {/* Login Form */}
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-[#C0C8D4] mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-[#0a1628]/50 border border-[#C0C8D4]/30 rounded-lg text-white placeholder-[#8b96a8] focus:border-[#3DA288] focus:outline-none focus:ring-2 focus:ring-[#3DA288]/30 transition-all"
+                  placeholder="you@example.com"
+                />
+              </div>
 
-          {/* Register Link */}
-          <div style={styles.footer}>
-            <p style={styles.footerText}>
-              Don't have an account?{' '}
-              <button onClick={onRegisterClick} style={styles.linkButton}>
-                Sign up
+              <div>
+                <label className="block text-sm font-semibold text-[#C0C8D4] mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-[#0a1628]/50 border border-[#C0C8D4]/30 rounded-lg text-white placeholder-[#8b96a8] focus:border-[#3DA288] focus:outline-none focus:ring-2 focus:ring-[#3DA288]/30 transition-all"
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 mt-2 bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-[#3DA288]/30 transition-all transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {loading ? 'Logging in...' : 'Log In'}
               </button>
-            </p>
+            </form>
+
+            {/* Register Link */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-[#8b96a8]">
+                Don't have an account?{' '}
+                <button
+                  onClick={onRegisterClick}
+                  className="text-[#3DA288] font-semibold hover:text-[#2d8a6f] transition-colors"
+                >
+                  Sign up
+                </button>
+              </p>
+            </div>
           </div>
         </motion.div>
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #0a1628 0%, #0f1e2e 50%, #1a2942 100%)',
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-
-  header: {
-    padding: '20px 40px',
-  },
-
-  backButton: {
-    padding: '12px 24px',
-    fontSize: '16px',
-    backgroundColor: 'transparent',
-    color: 'var(--text-secondary)',
-    border: '1px solid var(--card-border)',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    transition: 'all 0.3s ease',
-  },
-
-  content: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '40px 20px',
-  },
-
-  card: {
-    width: '100%',
-    maxWidth: '480px',
-    backgroundColor: 'rgba(26, 41, 66, 0.6)',
-    backdropFilter: 'blur(20px)',
-    border: '1px solid rgba(192, 200, 212, 0.3)',
-    borderRadius: '16px',
-    padding: '40px',
-  },
-
-  logoContainer: {
-    textAlign: 'center',
-    marginBottom: '32px',
-  },
-
-  title: {
-    fontSize: '32px',
-    fontWeight: '700',
-    background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    margin: '16px 0 8px 0',
-  },
-
-  subtitle: {
-    fontSize: '16px',
-    color: 'var(--text-secondary)',
-    margin: 0,
-  },
-
-  errorMessage: {
-    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-    border: '1px solid rgba(220, 53, 69, 0.3)',
-    borderRadius: '8px',
-    padding: '12px 16px',
-    color: '#ff6b6b',
-    fontSize: '14px',
-    marginBottom: '20px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-
-  formGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-
-  label: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: 'var(--text-primary)',
-  },
-
-  input: {
-    padding: '12px 16px',
-    fontSize: '16px',
-    backgroundColor: 'rgba(139, 157, 195, 0.1)',
-    border: '1px solid rgba(192, 200, 212, 0.3)',
-    borderRadius: '8px',
-    color: 'var(--text-primary)',
-    transition: 'all 0.3s ease',
-    outline: 'none',
-  },
-
-  submitButton: {
-    padding: '14px 24px',
-    fontSize: '16px',
-    fontWeight: '600',
-    background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    marginTop: '8px',
-  },
-
-  footer: {
-    marginTop: '24px',
-    textAlign: 'center',
-  },
-
-  footerText: {
-    fontSize: '14px',
-    color: 'var(--text-secondary)',
-    margin: 0,
-  },
-
-  linkButton: {
-    background: 'none',
-    border: 'none',
-    color: 'var(--accent-primary)',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-    textDecoration: 'underline',
-    padding: 0,
-  },
-};

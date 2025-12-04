@@ -21,6 +21,7 @@ import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
 import ProductLandingPage from "./components/ProductLandingPage";
 import BeneficiaryRegistrationPage from "./components/BeneficiaryRegistrationPage";
 import BeneficiaryDashboard from "./components/BeneficiaryDashboard";
+import UserDashboard from "./components/UserDashboard";
 import LoginPage from "./components/LoginPage";
 import RegistrationPage from "./components/RegistrationPage";
 
@@ -45,6 +46,7 @@ function App() {
   const [showRegistration, setShowRegistration] = useState(false);
   const [showBeneficiaryRegistration, setShowBeneficiaryRegistration] = useState(false);
   const [showBeneficiaryDashboard, setShowBeneficiaryDashboard] = useState(false);
+  const [showUserDashboard, setShowUserDashboard] = useState(false);
   const [, setUserAccountType] = useState<'user' | 'beneficiary' | null>(null);
   const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
   const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
@@ -98,8 +100,8 @@ function App() {
           if (user.accountType === 'beneficiary') {
             setShowBeneficiaryDashboard(true);
           } else {
-            // For user accounts, go to main app
-            setShowDemo(true);
+            // For user accounts, go to user dashboard
+            setShowUserDashboard(true);
           }
         }}
         onBackToHome={() => {
@@ -128,8 +130,8 @@ function App() {
           if (accountType === 'beneficiary') {
             setShowBeneficiaryDashboard(true);
           } else {
-            // For user accounts, go to main app
-            setShowDemo(true);
+            // For user accounts, go to user dashboard
+            setShowUserDashboard(true);
           }
         }}
         onBackToHome={() => {
@@ -174,6 +176,24 @@ function App() {
           setUserAccountType(null);
           setShowBeneficiaryDashboard(false);
           setShowProductLanding(true);
+        }}
+      />
+    );
+  }
+
+  // Show User Dashboard
+  if (showUserDashboard) {
+    return (
+      <UserDashboard
+        onLogout={() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('accountType');
+          setUserAccountType(null);
+          setShowUserDashboard(false);
+          setShowProductLanding(true);
+        }}
+        onTryDemo={() => {
+          setShowUserDashboard(false);
         }}
       />
     );

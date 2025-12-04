@@ -374,6 +374,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       user: {
         id: user.id,
         email: user.email,
+        accountType: user.accountType,
         emailVerified: user.emailVerified,
         phoneNumber: user.phoneNumber,
         phoneVerified: user.phoneVerified,

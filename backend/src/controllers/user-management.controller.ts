@@ -81,6 +81,19 @@ export async function getAllUsers(req: Request, res: Response): Promise<void> {
  * GET /api/users/:id
  */
 export async function getUserById(req: Request, res: Response): Promise<void> {
+  type BeneficiaryInfo = {
+    id: string;
+    email: string;
+    createdAt: Date;
+  };
+
+  type LinkedUserInfo = {
+    id: string;
+    email: string;
+    referCode: string | null;
+    createdAt: Date;
+  };
+
   try {
     const { id } = req.params;
 
@@ -113,7 +126,7 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
     }
 
     // Get beneficiary links if user account
-    let beneficiaries: any[] = [];
+    const beneficiaries: BeneficiaryInfo[] = [];
     if (user.accountType === 'user') {
       const links = await prisma.beneficiaryLink.findMany({
         where: { userId: id, status: 'active' },
@@ -127,11 +140,11 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
           },
         },
       });
-      beneficiaries = links.map(link => link.beneficiary);
+      beneficiaries.push(...links.map(link => link.beneficiary));
     }
 
     // Get linked users if beneficiary account
-    let linkedUsers: any[] = [];
+    const linkedUsers: LinkedUserInfo[] = [];
     if (user.accountType === 'beneficiary') {
       const links = await prisma.beneficiaryLink.findMany({
         where: { beneficiaryId: id, status: 'active' },
@@ -146,7 +159,7 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
           },
         },
       });
-      linkedUsers = links.map(link => link.user);
+      linkedUsers.push(...links.map(link => link.user));
     }
 
     res.json({

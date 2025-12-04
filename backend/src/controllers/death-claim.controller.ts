@@ -424,6 +424,56 @@ export async function getMyDeathClaims(req: AuthRequest, res: Response): Promise
 }
 
 /**
+ * Get pending death claims against current user
+ * Used by user to see if beneficiaries have submitted claims
+ */
+export async function getPendingClaimsAgainstMe(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.userId!;
+
+    const claims = await prisma.deathClaim.findMany({
+      where: {
+        userId,
+        status: {
+          in: ['pending', 'email_verification', 'phone_verification'],
+        },
+      },
+      include: {
+        link: {
+          include: {
+            beneficiary: {
+              select: {
+                id: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    res.json({
+      claims: claims.map(claim => ({
+        id: claim.id,
+        beneficiary: claim.link.beneficiary,
+        status: claim.status,
+        currentStage: claim.currentStage,
+        emailVerificationCount: claim.emailVerificationCount,
+        phoneVerificationCount: claim.phoneVerificationCount,
+        createdAt: claim.createdAt,
+      })),
+      count: claims.length,
+    });
+  } catch (error) {
+    logger.error('Error fetching pending claims:', error);
+    res.status(500).json({ error: 'Failed to fetch pending claims' });
+  }
+}
+
+/**
  * User responds to death verification (confirms they're alive)
  * This endpoint is called when user clicks link in email/SMS
  */

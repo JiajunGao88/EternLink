@@ -3,6 +3,7 @@ import {
   submitDeathClaim,
   getDeathClaimStatus,
   getMyDeathClaims,
+  getPendingClaimsAgainstMe,
   respondToDeathVerification,
   markKeyRetrieved,
 } from '../controllers/death-claim.controller';
@@ -35,19 +36,22 @@ const markKeyRetrievedSchema = Joi.object({
   }),
 });
 
-// POST /api/death-claim/submit - Submit death claim (beneficiary only)
+// POST /api/beneficiary/death-claim/submit - Submit death claim (beneficiary only)
 router.post('/submit', authenticateToken, validateRequest(submitDeathClaimSchema), submitDeathClaim);
 
-// GET /api/death-claim/:claimId - Get death claim status (beneficiary only)
+// GET /api/beneficiary/death-claim/pending-against-me - Get pending claims against current user (user only)
+router.get('/pending-against-me', authenticateToken, getPendingClaimsAgainstMe);
+
+// GET /api/beneficiary/death-claim/:claimId - Get death claim status
 router.get('/:claimId', authenticateToken, getDeathClaimStatus);
 
-// GET /api/death-claim - Get all my death claims (beneficiary only)
+// GET /api/beneficiary/death-claim - Get all my death claims (beneficiary only)
 router.get('/', authenticateToken, getMyDeathClaims);
 
-// POST /api/death-claim/respond - User responds to death verification (user only)
+// POST /api/beneficiary/death-claim/respond - User responds to death verification (user only)
 router.post('/respond', authenticateToken, validateRequest(respondToVerificationSchema), respondToDeathVerification);
 
-// POST /api/death-claim/mark-key-retrieved - Mark key as retrieved from blockchain (beneficiary only)
+// POST /api/beneficiary/death-claim/mark-key-retrieved - Mark key as retrieved from blockchain (beneficiary only)
 router.post('/mark-key-retrieved', authenticateToken, validateRequest(markKeyRetrievedSchema), markKeyRetrieved);
 
 export default router;

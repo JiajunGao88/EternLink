@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const API_BASE_URL = 'http://localhost:3001/api';
 
 interface RegistrationPageProps {
-  onRegistrationComplete: (token: string, accountType: 'user' | 'beneficiary') => void;
+  onRegistrationComplete: (token: string, accountType: 'user' | 'beneficiary', user?: { email: string; name?: string }) => void;
   onBackToHome: () => void;
   onLoginClick: () => void;
 }
@@ -114,7 +114,7 @@ export default function RegistrationPage({
 
       setSuccess('Email verified successfully! Redirecting...');
       setTimeout(() => {
-        onRegistrationComplete(data.token, accountType!);
+        onRegistrationComplete(data.token, accountType!, { email });
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Failed to verify email');

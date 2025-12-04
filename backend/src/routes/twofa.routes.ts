@@ -6,6 +6,8 @@ import {
   verify2FALogin,
   regenerateBackupCodes,
   get2FAStatus,
+  sendSMSVerification,
+  verifySMSCode,
 } from '../controllers/twofa.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { validateRequest } from '../middleware/validation.middleware';
@@ -53,5 +55,21 @@ router.post('/verify-login', validateRequest(verify2FALoginSchema), verify2FALog
 
 // POST /api/2fa/regenerate-backup-codes - Regenerate backup codes
 router.post('/regenerate-backup-codes', authenticateToken, validateRequest(regenerateBackupCodesSchema), regenerateBackupCodes);
+
+// SMS Verification (for phone onboarding)
+const sendSMSSchema = Joi.object({
+  phoneNumber: Joi.string().pattern(/^\+1\d{10}$/).required(), // US phone numbers only for now
+});
+
+const verifySMSSchema = Joi.object({
+  phoneNumber: Joi.string().pattern(/^\+1\d{10}$/).required(),
+  code: Joi.string().length(6).required(),
+});
+
+// POST /api/2fa/send-sms - Send SMS verification code
+router.post('/send-sms', authenticateToken, validateRequest(sendSMSSchema), sendSMSVerification);
+
+// POST /api/2fa/verify-sms - Verify SMS code
+router.post('/verify-sms', authenticateToken, validateRequest(verifySMSSchema), verifySMSCode);
 
 export default router;

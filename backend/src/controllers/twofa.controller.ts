@@ -406,3 +406,189 @@ export async function get2FAStatus(req: AuthRequest, res: Response): Promise<voi
     res.status(500).json({ error: 'Failed to fetch 2FA status' });
   }
 }
+
+// ===== SMS Verification for Phone Onboarding =====
+
+/**
+ * Generate a 6-digit verification code
+ */
+function generateSMSCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Cleanup expired verification codes from database
+ * Called periodically to remove old codes
+ */
+async function cleanupExpiredCodes(): Promise<void> {
+  try {
+    const deleted = await prisma.verificationCode.deleteMany({
+      where: {
+        expiresAt: {
+          lt: new Date(),
+        },
+      },
+    });
+    if (deleted.count > 0) {
+      logger.info(`Cleaned up ${deleted.count} expired verification codes`);
+    }
+  } catch (error) {
+    logger.error('Error cleaning up expired codes:', error);
+  }
+}
+
+// Cleanup expired codes every 10 minutes
+setInterval(cleanupExpiredCodes, 10 * 60 * 1000);
+
+/**
+ * Send SMS verification code
+ * Stores code in database with expiration
+ * In production, integrate with Twilio, AWS SNS, or similar service
+ */
+export async function sendSMSVerification(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.userId!;
+    const { phoneNumber } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    // Delete any existing verification codes for this user/phone combination
+    await prisma.verificationCode.deleteMany({
+      where: {
+        userId,
+        phoneNumber,
+        type: 'phone_verification',
+      },
+    });
+
+    // Generate 6-digit code
+    const code = generateSMSCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store verification code in database
+    const verification = await prisma.verificationCode.create({
+      data: {
+        userId,
+        phoneNumber,
+        code,
+        type: 'phone_verification',
+        expiresAt,
+        verified: false,
+      },
+    });
+
+    // TODO: In production, send actual SMS via Twilio/AWS SNS
+    // For now, just log it (for demo purposes)
+    logger.info('SMS verification code generated:', {
+      userId,
+      phoneNumber,
+      code, // Remove this in production!
+      expiresAt,
+      verificationId: verification.id,
+    });
+
+    // For demo: Return the code in response (REMOVE IN PRODUCTION!)
+    console.log(`\n=== SMS VERIFICATION CODE ===`);
+    console.log(`Phone: ${phoneNumber}`);
+    console.log(`Code: ${code}`);
+    console.log(`Expires: ${expiresAt.toISOString()}`);
+    console.log(`Verification ID: ${verification.id}`);
+    console.log(`=============================\n`);
+
+    res.json({
+      message: 'Verification code sent successfully',
+      expiresAt: expiresAt.toISOString(),
+      // TODO: Remove 'code' field in production
+      code, // Only for demo/testing purposes
+    });
+  } catch (error) {
+    logger.error('Error sending SMS verification:', error);
+    res.status(500).json({ error: 'Failed to send verification code' });
+  }
+}
+
+/**
+ * Verify SMS code
+ * Checks code from database and updates user's phone number
+ */
+export async function verifySMSCode(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.userId!;
+    const { phoneNumber, code } = req.body;
+
+    // Find the most recent unverified code for this user/phone
+    const verification = await prisma.verificationCode.findFirst({
+      where: {
+        userId,
+        phoneNumber,
+        type: 'phone_verification',
+        verified: false,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!verification) {
+      res.status(400).json({ error: 'No verification code found. Please request a new code.' });
+      return;
+    }
+
+    // Check expiration
+    if (verification.expiresAt < new Date()) {
+      // Delete expired code
+      await prisma.verificationCode.delete({
+        where: { id: verification.id },
+      });
+      res.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
+      return;
+    }
+
+    // Verify code (case-insensitive comparison)
+    if (verification.code !== code) {
+      res.status(401).json({
+        error: 'Invalid verification code',
+      });
+      return;
+    }
+
+    // Code is valid - mark as verified and update user's phone number
+    await prisma.$transaction([
+      // Mark verification code as verified
+      prisma.verificationCode.update({
+        where: { id: verification.id },
+        data: { verified: true },
+      }),
+      // Update user's phone number
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          phoneNumber,
+          phoneVerified: true,
+        },
+      }),
+    ]);
+
+    logger.info('Phone number verified successfully:', {
+      userId,
+      phoneNumber,
+      verificationId: verification.id,
+    });
+
+    res.json({
+      message: 'Phone number verified successfully',
+      phoneNumber,
+      verified: true,
+    });
+  } catch (error) {
+    logger.error('Error verifying SMS code:', error);
+    res.status(500).json({ error: 'Failed to verify code' });
+  }
+}

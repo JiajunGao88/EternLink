@@ -24,6 +24,9 @@ import BeneficiaryDashboard from "./components/BeneficiaryDashboard";
 import UserDashboard from "./components/UserDashboard";
 import LoginPage from "./components/LoginPage";
 import RegistrationPage from "./components/RegistrationPage";
+import { OnboardingWizard } from "./components/OnboardingWizard";
+import { PlanSelection } from "./components/PlanSelection";
+import { FrozenDashboard } from "./components/FrozenDashboard";
 
 // Default Configuration
 const DEFAULTS = {
@@ -47,7 +50,13 @@ function App() {
   const [showBeneficiaryRegistration, setShowBeneficiaryRegistration] = useState(false);
   const [showBeneficiaryDashboard, setShowBeneficiaryDashboard] = useState(false);
   const [showUserDashboard, setShowUserDashboard] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPlanSelection, setShowPlanSelection] = useState(false);
+  const [showFrozenDashboard, setShowFrozenDashboard] = useState(false);
   const [, setUserAccountType] = useState<'user' | 'beneficiary' | null>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
+  const [selectedPlan, setSelectedPlan] = useState<'individual' | 'family' | null>(null);
   const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
   const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
   const [ipfsCid, setIpfsCid] = useState("");
@@ -94,14 +103,28 @@ function App() {
           localStorage.setItem('authToken', token);
           localStorage.setItem('accountType', user.accountType);
           setUserAccountType(user.accountType);
+          setUserEmail(user.email);
+          setUserName(user.name || '');
           setShowLogin(false);
 
           // Redirect based on account type
           if (user.accountType === 'beneficiary') {
             setShowBeneficiaryDashboard(true);
           } else {
-            // For user accounts, go to user dashboard
-            setShowUserDashboard(true);
+            // For user accounts, check subscription status
+            const hasPlan = localStorage.getItem('subscriptionPlan');
+            const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+
+            if (!hasPlan) {
+              // No plan = show frozen dashboard
+              setShowFrozenDashboard(true);
+            } else if (!onboardingCompleted) {
+              // Has plan but not onboarded = force onboarding
+              setShowOnboarding(true);
+            } else {
+              // Has plan and onboarded = show dashboard
+              setShowUserDashboard(true);
+            }
           }
         }}
         onBackToHome={() => {
@@ -120,18 +143,22 @@ function App() {
   if (showRegistration) {
     return (
       <RegistrationPage
-        onRegistrationComplete={(token, accountType) => {
+        onRegistrationComplete={(token, accountType, user) => {
           localStorage.setItem('authToken', token);
           localStorage.setItem('accountType', accountType);
           setUserAccountType(accountType);
+          if (user) {
+            setUserEmail(user.email);
+            setUserName(user.name || '');
+          }
           setShowRegistration(false);
 
           // Redirect based on account type
           if (accountType === 'beneficiary') {
             setShowBeneficiaryDashboard(true);
           } else {
-            // For user accounts, go to user dashboard
-            setShowUserDashboard(true);
+            // For user accounts, show frozen dashboard (need to buy plan first)
+            setShowFrozenDashboard(true);
           }
         }}
         onBackToHome={() => {
@@ -146,6 +173,57 @@ function App() {
     );
   }
 
+
+  // Show Frozen Dashboard (no plan purchased)
+  if (showFrozenDashboard) {
+    return (
+      <FrozenDashboard
+        onSelectPlan={() => {
+          setShowFrozenDashboard(false);
+          setShowPlanSelection(true);
+        }}
+        onLogout={() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('accountType');
+          setUserAccountType(null);
+          setShowFrozenDashboard(false);
+          setShowProductLanding(true);
+        }}
+      />
+    );
+  }
+
+  // Show Plan Selection
+  if (showPlanSelection) {
+    return (
+      <PlanSelection
+        onPlanSelected={(plan) => {
+          setSelectedPlan(plan);
+          localStorage.setItem('subscriptionPlan', plan);
+          setShowPlanSelection(false);
+          setShowOnboarding(true); // Force onboarding after plan purchase
+        }}
+        onSkip={() => {
+          setShowPlanSelection(false);
+          setShowFrozenDashboard(true); // Back to frozen if skipped
+        }}
+      />
+    );
+  }
+
+  // Show Onboarding Wizard
+  if (showOnboarding) {
+    return (
+      <OnboardingWizard
+        onComplete={() => {
+          setShowOnboarding(false);
+          setShowUserDashboard(true);
+        }}
+        userEmail={userEmail}
+        userName={userName}
+      />
+    );
+  }
 
   // Show Beneficiary Registration Page
   if (showBeneficiaryRegistration) {

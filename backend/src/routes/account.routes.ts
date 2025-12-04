@@ -6,6 +6,7 @@ import {
   uploadVoiceSignature,
   verifyVoiceSignature,
   getAccountStatus,
+  completeOnboarding,
 } from '../controllers/account.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { validateRequest } from '../middleware/validation.middleware';
@@ -36,6 +37,14 @@ const voiceUploadSchema = Joi.object({
   voiceData: Joi.string().required(),
 });
 
+const completeOnboardingSchema = Joi.object({
+  notificationConfig: Joi.object({
+    emailNotificationDays: Joi.number().min(1).max(365).optional(),
+    phoneNotificationDays: Joi.number().min(1).max(365).optional(),
+    accountFreezeDays: Joi.number().min(1).max(365).optional(),
+  }).optional(),
+});
+
 // GET /api/account/status - Get account status
 router.get('/status', getAccountStatus);
 
@@ -53,5 +62,8 @@ router.post('/voice/upload', validateRequest(voiceUploadSchema), uploadVoiceSign
 
 // POST /api/account/voice/verify - Verify voice to unlock account
 router.post('/voice/verify', validateRequest(voiceUploadSchema), verifyVoiceSignature);
+
+// POST /api/account/complete-onboarding - Complete onboarding wizard and save settings
+router.post('/complete-onboarding', validateRequest(completeOnboardingSchema), completeOnboarding);
 
 export default router;

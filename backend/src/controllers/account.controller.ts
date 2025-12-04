@@ -382,3 +382,57 @@ export async function getAccountStatus(req: AuthRequest, res: Response): Promise
     res.status(500).json({ error: 'Failed to fetch account status' });
   }
 }
+
+/**
+ * Complete onboarding wizard and save notification settings
+ */
+export async function completeOnboarding(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.userId!;
+    const {
+      notificationConfig,
+    } = req.body;
+
+    const updateData: any = {};
+
+    // Save notification settings from onboarding
+    if (notificationConfig) {
+      // Map accountFreezeDays to freezeDays (field name mismatch fix)
+      if (notificationConfig.emailNotificationDays !== undefined) {
+        updateData.emailNotificationDays = notificationConfig.emailNotificationDays;
+      }
+      if (notificationConfig.phoneNotificationDays !== undefined) {
+        updateData.phoneNotificationDays = notificationConfig.phoneNotificationDays;
+      }
+      if (notificationConfig.accountFreezeDays !== undefined) {
+        updateData.freezeDays = notificationConfig.accountFreezeDays;
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    logger.info('Onboarding completed and settings saved:', {
+      userId,
+      emailNotificationDays: updatedUser.emailNotificationDays,
+      phoneNotificationDays: updatedUser.phoneNotificationDays,
+      freezeDays: updatedUser.freezeDays,
+    });
+
+    res.json({
+      message: 'Onboarding completed successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        emailNotificationDays: updatedUser.emailNotificationDays,
+        phoneNotificationDays: updatedUser.phoneNotificationDays,
+        freezeDays: updatedUser.freezeDays,
+      },
+    });
+  } catch (error) {
+    logger.error('Error completing onboarding:', error);
+    res.status(500).json({ error: 'Failed to complete onboarding' });
+  }
+}

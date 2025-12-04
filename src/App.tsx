@@ -9,6 +9,7 @@ import {
   packEncryptedFileSSS,
   unpackEncryptedFileSSS,
   detectEncryptionMode,
+  extractFileHashFromEncFile,
   downloadFile,
 } from "./utils/crypto";
 import { splitKey, reconstructKey, type KeyShares } from "./utils/secretSharing";
@@ -77,6 +78,10 @@ function App() {
   
   // State for share save confirmation
   const [sharesSaved, setSharesSaved] = useState(false);
+  
+  // Copy button states
+  const [copiedShare1, setCopiedShare1] = useState(false);
+  const [copiedShare2, setCopiedShare2] = useState(false);
 
   // Show Landing Page
   if (showLandingPage) {
@@ -154,10 +159,21 @@ function App() {
     const content = await selectedFile.arrayBuffer();
     setEncryptedFile(content);
     setFile(selectedFile);
-    setStatus({
-      type: "info",
-      message: `Encrypted file loaded: ${selectedFile.name}`,
-    });
+    
+    // Auto-extract embedded file hash (if present in v3 format)
+    const embeddedHash = extractFileHashFromEncFile(content);
+    if (embeddedHash) {
+      setDecryptFileHash(embeddedHash);
+      setStatus({
+        type: "success",
+        message: `File loaded! Hash auto-detected: ${embeddedHash.slice(0, 10)}...`,
+      });
+    } else {
+      setStatus({
+        type: "info",
+        message: `Encrypted file loaded: ${selectedFile.name} (legacy format - enter hash manually)`,
+      });
+    }
   };
 
   // SSS Encrypt and Register
@@ -213,8 +229,8 @@ function App() {
         console.warn('Failed to save Share 1 to localStorage:', e);
       }
 
-      // 6. Pack and download encrypted file
-      const encryptedBlob = packEncryptedFileSSS(encrypted, iv);
+      // 6. Pack and download encrypted file (with embedded file hash)
+      const encryptedBlob = packEncryptedFileSSS(encrypted, iv, hashHex);
       const encryptedFileName = fileInfo.name + ".enc";
       downloadFile(encryptedBlob, encryptedFileName);
 
@@ -292,7 +308,7 @@ function App() {
       await new Promise(r => setTimeout(r, 500)); // Visual delay
       
       const mode = detectEncryptionMode(encryptedFile);
-      if (mode !== 'sss') {
+      if (mode !== 'sss' && mode !== 'sss-v3') {
         setStatus({ type: "error", message: "This file uses password encryption, not SSS" });
         setDecryptStep(0);
         return;
@@ -713,19 +729,25 @@ function App() {
                         {keyShares.shareOne}
                       </div>
                       <button
-                        onClick={() => navigator.clipboard.writeText(keyShares.shareOne)}
+                        onClick={() => {
+                          navigator.clipboard.writeText(keyShares.shareOne);
+                          setCopiedShare1(true);
+                          setTimeout(() => setCopiedShare1(false), 2000);
+                        }}
                         style={{
                           marginTop: '8px',
                           padding: '6px 12px',
                           fontSize: '12px',
-                          background: 'var(--accent-primary)',
+                          background: copiedShare1 ? 'var(--success)' : 'var(--accent-primary)',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
                           cursor: 'pointer',
+                          transition: 'background 0.2s ease',
+                          minWidth: '100px',
                         }}
                       >
-                        Copy Share 1
+                        {copiedShare1 ? '✓ Copied!' : 'Copy Share 1'}
                       </button>
                     </div>
 
@@ -746,19 +768,25 @@ function App() {
                         {keyShares.shareTwo}
                       </div>
                       <button
-                        onClick={() => navigator.clipboard.writeText(keyShares.shareTwo)}
+                        onClick={() => {
+                          navigator.clipboard.writeText(keyShares.shareTwo);
+                          setCopiedShare2(true);
+                          setTimeout(() => setCopiedShare2(false), 2000);
+                        }}
                         style={{
                           marginTop: '8px',
                           padding: '6px 12px',
                           fontSize: '12px',
-                          background: 'var(--accent-primary)',
+                          background: copiedShare2 ? 'var(--success)' : 'var(--accent-primary)',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
                           cursor: 'pointer',
+                          transition: 'background 0.2s ease',
+                          minWidth: '100px',
                         }}
                       >
-                        Copy Share 2
+                        {copiedShare2 ? '✓ Copied!' : 'Copy Share 2'}
                       </button>
                     </div>
 
@@ -769,7 +797,7 @@ function App() {
                       fontSize: '13px',
                       color: 'var(--info)',
                     }}>
-                      <strong>Share 3</strong> is stored on blockchain. You can retrieve it anytime using the file hash.
+                      <strong>Share 3</strong> is stored on blockchain and embedded in your .enc file. No need to save separately!
                     </div>
 
                     <div style={{
@@ -926,16 +954,38 @@ function App() {
                     </div>
 
                     <div style={styles.inputGroup}>
-                      <label style={styles.label}>File Hash (for blockchain lookup)</label>
+                      <label style={styles.label}>
+                        File Hash (for blockchain lookup)
+                        {decryptFileHash && encryptedFile && extractFileHashFromEncFile(encryptedFile) && (
+                          <span style={{ 
+                            marginLeft: '8px', 
+                            fontSize: '11px', 
+                            color: 'var(--success)',
+                            fontWeight: '400',
+                          }}>
+                            ✓ Auto-detected
+                          </span>
+                        )}
+                      </label>
                       <input
                         type="text"
                         value={decryptFileHash}
                         onChange={(e) => setDecryptFileHash(e.target.value)}
-                        placeholder="0x... (66 characters)"
-                        style={{ ...styles.input, fontFamily: 'monospace', fontSize: '12px' }}
+                        placeholder="0x... (auto-detected from file)"
+                        style={{ 
+                          ...styles.input, 
+                          fontFamily: 'monospace', 
+                          fontSize: '12px',
+                          background: decryptFileHash && encryptedFile && extractFileHashFromEncFile(encryptedFile) 
+                            ? 'rgba(16, 185, 129, 0.1)' 
+                            : 'var(--input-bg)',
+                        }}
+                        readOnly={!!(decryptFileHash && encryptedFile && extractFileHashFromEncFile(encryptedFile))}
                       />
                       <span style={styles.hint}>
-                        The file hash you received when encrypting. Share 3 will be retrieved from blockchain.
+                        {encryptedFile && extractFileHashFromEncFile(encryptedFile) 
+                          ? '✨ File hash was embedded in the .enc file and auto-detected!'
+                          : 'For older files without embedded hash, enter manually.'}
                       </span>
                     </div>
 

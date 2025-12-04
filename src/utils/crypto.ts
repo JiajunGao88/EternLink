@@ -235,14 +235,43 @@ export function packEncryptedFile(
 }
 
 /**
- * 将加密数据打包为 .enc 文件格式（SSS 模式）
- * 格式: [version(1字节)][iv(12字节)][encrypted data]
- * version = 0x02 表示 SSS 模式
+ * 将加密数据打包为 .enc 文件格式（SSS 模式 v2）
+ * 格式: [version(1字节)][fileHashLen(1字节)][fileHash(66字节)][iv(12字节)][encrypted data]
+ * version = 0x03 表示 SSS 模式 v2 (with embedded file hash)
+ * 
+ * @param encrypted - 加密后的数据
+ * @param iv - 初始化向量
+ * @param fileHash - 文件哈希 (0x + 64 hex chars)
  */
 export function packEncryptedFileSSS(
   encrypted: Uint8Array,
-  iv: Uint8Array
+  iv: Uint8Array,
+  fileHash?: string
 ): Blob {
+  // Use v3 format if fileHash is provided, otherwise v2 for backward compatibility
+  if (fileHash) {
+    const version = new Uint8Array([0x03]); // SSS v2 mode with embedded hash
+    const fileHashBytes = new TextEncoder().encode(fileHash);
+    const hashLength = new Uint8Array([fileHashBytes.length]);
+    
+    const totalLength = 1 + 1 + fileHashBytes.length + iv.length + encrypted.length;
+    const packed = new Uint8Array(totalLength);
+    
+    let offset = 0;
+    packed.set(version, offset);
+    offset += 1;
+    packed.set(hashLength, offset);
+    offset += 1;
+    packed.set(fileHashBytes, offset);
+    offset += fileHashBytes.length;
+    packed.set(iv, offset);
+    offset += iv.length;
+    packed.set(encrypted, offset);
+    
+    return new Blob([packed], { type: "application/octet-stream" });
+  }
+  
+  // Legacy v2 format (no embedded hash)
   const version = new Uint8Array([0x02]); // SSS mode marker
   const totalLength = 1 + iv.length + encrypted.length;
   const packed = new Uint8Array(totalLength);
@@ -275,13 +304,28 @@ export function unpackEncryptedFile(file: ArrayBuffer): {
 
 /**
  * 从 .enc 文件解包加密数据（SSS 模式）
+ * Supports both v2 (0x02) and v3 (0x03 with embedded hash) formats
  */
 export function unpackEncryptedFileSSS(file: ArrayBuffer): {
   iv: Uint8Array;
   encrypted: Uint8Array;
+  fileHash?: string;
 } {
   const data = new Uint8Array(file);
-  // Skip version byte (0x02)
+  const version = data[0];
+  
+  if (version === 0x03) {
+    // v3 format: [version][hashLen][fileHash][iv][encrypted]
+    const hashLength = data[1];
+    const fileHashBytes = data.slice(2, 2 + hashLength);
+    const fileHash = new TextDecoder().decode(fileHashBytes);
+    const iv = data.slice(2 + hashLength, 2 + hashLength + 12);
+    const encrypted = data.slice(2 + hashLength + 12);
+    
+    return { iv, encrypted, fileHash };
+  }
+  
+  // v2 format: [version][iv][encrypted]
   const iv = data.slice(1, 13);
   const encrypted = data.slice(13);
   
@@ -289,14 +333,33 @@ export function unpackEncryptedFileSSS(file: ArrayBuffer): {
 }
 
 /**
- * 检测加密文件的模式
- * @returns 'sss' | 'password'
+ * 从 .enc 文件中提取 file hash（如果存在）
+ * @returns file hash or null if not embedded
  */
-export function detectEncryptionMode(file: ArrayBuffer): 'sss' | 'password' {
+export function extractFileHashFromEncFile(file: ArrayBuffer): string | null {
   const data = new Uint8Array(file);
-  // SSS mode files start with version byte 0x02
+  const version = data[0];
+  
+  if (version === 0x03) {
+    const hashLength = data[1];
+    const fileHashBytes = data.slice(2, 2 + hashLength);
+    return new TextDecoder().decode(fileHashBytes);
+  }
+  
+  return null;
+}
+
+/**
+ * 检测加密文件的模式
+ * @returns 'sss' | 'sss-v3' | 'password'
+ */
+export function detectEncryptionMode(file: ArrayBuffer): 'sss' | 'sss-v3' | 'password' {
+  const data = new Uint8Array(file);
+  if (data[0] === 0x03) {
+    return 'sss-v3'; // SSS with embedded file hash
+  }
   if (data[0] === 0x02) {
-    return 'sss';
+    return 'sss'; // SSS without embedded hash (legacy)
   }
   return 'password';
 }

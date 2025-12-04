@@ -176,13 +176,17 @@ async function getKeyShare3(
     }
     
     // Query FileRegistered events for this fileHash
+    // Get recent blocks only (last 100000 blocks to avoid timeout)
+    const currentBlock = await provider.getBlockNumber();
+    const fromBlock = Math.max(0, currentBlock - 100000);
+    
     const filter = contract.filters.FileRegistered(null, fileHash);
-    const events = await contract.queryFilter(filter);
+    const events = await contract.queryFilter(filter, fromBlock, currentBlock);
     
     if (events.length === 0) {
       return {
         success: false,
-        error: 'Registration event not found'
+        error: 'Registration event not found. File may be too old or not registered with SSS.'
       };
     }
     
@@ -190,10 +194,24 @@ async function getKeyShare3(
     const event = events[0];
     const block = await event.getBlock();
     
-    // Parse event data - cid contains keyShare3
-    // Event args: owner, fileHash, cipher, cid, size, mime
+    // Parse event data
+    // Event: FileRegistered(address indexed owner, bytes32 indexed fileHash, string cipher, string cid, uint256 size, string mime)
+    // In ethers.js v6, args includes ALL parameters (indexed and non-indexed)
+    // args[0] = owner (indexed)
+    // args[1] = fileHash (indexed)  
+    // args[2] = cipher
+    // args[3] = cid (keyShare3)
+    // args[4] = size
+    // args[5] = mime
     const args = (event as any).args;
-    const keyShare3 = args[3]; // cid is the 4th argument (index 3)
+    const keyShare3 = args[3]; // cid is at index 3
+    
+    if (!keyShare3 || keyShare3 === '') {
+      return {
+        success: false,
+        error: 'No key share found. This file may have been registered without SSS.'
+      };
+    }
     
     return {
       success: true,
@@ -205,7 +223,7 @@ async function getKeyShare3(
     console.error('Get keyShare3 error:', error);
     return {
       success: false,
-      error: 'Failed to retrieve key share from blockchain'
+      error: 'Failed to retrieve key share: ' + (error.message || 'Unknown error')
     };
   }
 }

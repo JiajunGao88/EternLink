@@ -1,0 +1,230 @@
+// Prisma schema for EternLink Dead Man's Switch
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table - stores user account information
+model User {
+  id                    String       @id @default(uuid())
+  walletAddress         String?      @unique @map("wallet_address") @db.VarChar(42)
+  email                 String       @unique @db.VarChar(255)
+  passwordHash          String       @map("password_hash") @db.VarChar(255)
+  emailVerified         Boolean      @default(false) @map("email_verified")
+  accountType           String       @default("user") @map("account_type") @db.VarChar(20) // "user" or "beneficiary"
+  phoneNumber           String?      @map("phone_number") @db.VarChar(20)
+  phoneVerified         Boolean      @default(false) @map("phone_verified")
+  voiceSignature        String?      @map("voice_signature") @db.Text // Voice profile ID for user accounts
+  accountFrozen         Boolean      @default(false) @map("account_frozen")
+  freezeReason          String?      @map("freeze_reason") @db.VarChar(255)
+  lastLoginAt           DateTime?    @map("last_login_at")
+  emailNotificationDays Int?         @map("email_notification_days") // Days before email notification (user only)
+  phoneNotificationDays Int?         @map("phone_notification_days") // Days before phone notification (user only)
+  freezeDays            Int?         @map("freeze_days") // Days before account freeze (user only)
+  twoFactorEnabled      Boolean      @default(false) @map("two_factor_enabled") // 2FA enabled flag
+  twoFactorSecret       String?      @map("two_factor_secret") @db.VarChar(255) // Encrypted 2FA secret
+  twoFactorBackupCodes  String?      @map("two_factor_backup_codes") @db.Text // Encrypted backup codes
+  referCode             String?      @unique @map("refer_code") @db.VarChar(12) // Unique refer code for user accounts
+  subscriptionActive    Boolean      @default(false) @map("subscription_active") // Whether user has an active subscription/plan
+  onboardingCompleted   Boolean      @default(false) @map("onboarding_completed") // Whether user has completed onboarding wizard
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+
+  heartbeats            Heartbeat[]
+  verificationCodes     VerificationCode[]
+  loginHistory          LoginHistory[]
+  beneficiaryLinks      BeneficiaryLink[] @relation("UserBeneficiaries") // Beneficiaries linked to this user
+  linkedAsUser          BeneficiaryLink[] @relation("BeneficiaryUser") // Users this beneficiary is linked to
+
+  @@index([email])
+  @@index([lastLoginAt])
+  @@index([accountType])
+  @@index([referCode])
+  @@map("users")
+}
+
+// Verification codes for email/phone verification
+model VerificationCode {
+  id            String    @id @default(uuid())
+  userId        String?   @map("user_id")
+  email         String?   @db.VarChar(255)
+  phoneNumber   String?   @map("phone_number") @db.VarChar(20)
+  code          String    @db.VarChar(6)
+  type          String    @db.VarChar(20) // email_verification, phone_verification, password_reset
+  expiresAt     DateTime  @map("expires_at")
+  verified      Boolean   @default(false)
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([code])
+  @@index([expiresAt])
+  @@map("verification_codes")
+}
+
+// Login history for tracking user activity
+model LoginHistory {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  loginAt       DateTime  @default(now()) @map("login_at")
+  ipAddress     String?   @map("ip_address") @db.VarChar(45)
+  userAgent     String?   @map("user_agent") @db.Text
+  loginMethod   String    @map("login_method") @db.VarChar(50) // password, siwe, voice
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([loginAt])
+  @@map("login_history")
+}
+
+// Heartbeats table - tracks user check-ins and encrypted shares
+model Heartbeat {
+  id                  String        @id @default(uuid())
+  userId              String        @map("user_id")
+  lastCheckIn         DateTime      @map("last_check_in")
+  intervalDays        Int           @map("interval_days") // 30, 60, 90, 180
+  encryptedFileHash   String        @map("encrypted_file_hash") @db.VarChar(66) // 0x...
+  shareOneEncrypted   String        @map("share_one_encrypted") @db.Text // Encrypted SSS Share 1 (user keeps)
+  shareThreeEncrypted String        @map("share_three_encrypted") @db.Text // Encrypted SSS Share 3 (stored on blockchain/metadata)
+  recoveryTriggered   Boolean       @default(false) @map("recovery_triggered")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  beneficiaries       Beneficiary[]
+  notificationLogs    NotificationLog[]
+
+  @@index([userId])
+  @@index([lastCheckIn])
+  @@map("heartbeats")
+}
+
+// Beneficiaries table - stores beneficiary information and Share 2
+model Beneficiary {
+  id                String    @id @default(uuid())
+  heartbeatId       String    @map("heartbeat_id")
+  name              String    @db.VarChar(255)
+  email             String    @db.VarChar(255)
+  relationship      String?   @db.VarChar(100)
+  shareTwoEncrypted String    @map("share_two_encrypted") @db.Text // Encrypted SSS Share 2
+  notifiedAt        DateTime? @map("notified_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  heartbeat         Heartbeat @relation(fields: [heartbeatId], references: [id], onDelete: Cascade)
+  notificationLogs  NotificationLog[]
+
+  @@index([heartbeatId])
+  @@index([email])
+  @@map("beneficiaries")
+}
+
+// Notification logs - tracks email notifications sent to beneficiaries
+model NotificationLog {
+  id              String    @id @default(uuid())
+  heartbeatId     String    @map("heartbeat_id")
+  beneficiaryId   String    @map("beneficiary_id")
+  sentAt          DateTime  @default(now()) @map("sent_at")
+  emailStatus     String    @map("email_status") @db.VarChar(50) // sent, failed, bounced
+  emailProviderId String?   @map("email_provider_id") @db.VarChar(255)
+  errorMessage    String?   @map("error_message") @db.Text
+
+  heartbeat       Heartbeat  @relation(fields: [heartbeatId], references: [id], onDelete: Cascade)
+  beneficiary     Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade)
+
+  @@index([heartbeatId])
+  @@index([beneficiaryId])
+  @@index([sentAt])
+  @@map("notification_logs")
+}
+
+// BeneficiaryLink - Links beneficiary accounts to user accounts via refer code
+model BeneficiaryLink {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id") // The user account
+  beneficiaryId     String    @map("beneficiary_id") // The beneficiary account
+  status            String    @default("active") @db.VarChar(20) // active, revoked
+  createdAt         DateTime  @default(now()) @map("created_at")
+  revokedAt         DateTime? @map("revoked_at")
+
+  user              User      @relation("UserBeneficiaries", fields: [userId], references: [id], onDelete: Cascade)
+  beneficiary       User      @relation("BeneficiaryUser", fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  deathClaims       DeathClaim[]
+
+  @@unique([userId, beneficiaryId])
+  @@index([userId])
+  @@index([beneficiaryId])
+  @@index([status])
+  @@map("beneficiary_links")
+}
+
+// DeathClaim - Tracks death verification process initiated by beneficiaries
+model DeathClaim {
+  id                    String    @id @default(uuid())
+  linkId                String    @map("link_id")
+  userId                String    @map("user_id") // The deceased user
+  beneficiaryId         String    @map("beneficiary_id") // The beneficiary making the claim
+  status                String    @default("pending") @db.VarChar(30) // pending, email_verification, phone_verification, approved, rejected
+  currentStage          String    @default("email_level") @map("current_stage") @db.VarChar(30) // email_level, phone_level, key_retrieval, completed
+  emailVerificationSentAt DateTime? @map("email_verification_sent_at")
+  emailVerificationCount Int       @default(0) @map("email_verification_count")
+  phoneVerificationSentAt DateTime? @map("phone_verification_sent_at")
+  phoneVerificationCount Int       @default(0) @map("phone_verification_count")
+  verifiedAt            DateTime? @map("verified_at")
+  rejectedAt            DateTime? @map("rejected_at")
+  rejectionReason       String?   @map("rejection_reason") @db.Text
+  keyRetrievedAt        DateTime? @map("key_retrieved_at")
+  keyRetrievalTxHash    String?   @map("key_retrieval_tx_hash") @db.VarChar(66) // Blockchain transaction hash
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  link                  BeneficiaryLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  verificationEvents    DeathVerificationEvent[]
+  progressNotifications DeathClaimNotification[]
+
+  @@index([linkId])
+  @@index([userId])
+  @@index([beneficiaryId])
+  @@index([status])
+  @@index([currentStage])
+  @@map("death_claims")
+}
+
+// DeathVerificationEvent - Tracks each verification event during death claim process
+model DeathVerificationEvent {
+  id              String    @id @default(uuid())
+  claimId         String    @map("claim_id")
+  eventType       String    @map("event_type") @db.VarChar(50) // email_sent, phone_sent, no_response, user_responded
+  verificationLevel String  @map("verification_level") @db.VarChar(20) // email, phone
+  details         String?   @db.Text // JSON details about the event
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  claim           DeathClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([eventType])
+  @@map("death_verification_events")
+}
+
+// DeathClaimNotification - Tracks progress notifications sent to beneficiaries
+model DeathClaimNotification {
+  id              String    @id @default(uuid())
+  claimId         String    @map("claim_id")
+  notificationType String   @map("notification_type") @db.VarChar(50) // claim_submitted, email_stage_started, phone_stage_started, verification_complete, key_retrieved
+  sentAt          DateTime  @default(now()) @map("sent_at")
+  emailStatus     String    @map("email_status") @db.VarChar(50) // sent, failed
+  emailProviderId String?   @map("email_provider_id") @db.VarChar(255)
+
+  claim           DeathClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([notificationType])
+  @@map("death_claim_notifications")
+}

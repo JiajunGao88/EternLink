@@ -7,7 +7,6 @@ import { API_BASE_URL } from '../config';
 
 /**
  * Register file hash on blockchain via backend API
- * Legacy mode: without keyShare3
  */
 export async function registerFileHash(
   fileHash: string,

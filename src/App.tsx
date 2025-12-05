@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   sha256,
@@ -14,8 +14,16 @@ import {
 } from "./utils/crypto";
 import { splitKey, reconstructKey, type KeyShares } from "./utils/secretSharing";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
-import LandingPage from "./components/LandingPage";
+// import LandingPage from "./components/LandingPage";
 import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain } from "./utils/api";
+import ProductLandingPage from "./components/ProductLandingPage";
+import BeneficiaryRegistrationPage from "./components/BeneficiaryRegistrationPage";
+import BeneficiaryDashboard from "./components/BeneficiaryDashboard";
+import UserDashboard from "./components/UserDashboard";
+import LoginPage from "./components/LoginPage";
+import RegistrationPage from "./components/RegistrationPage";
+import { OnboardingWizard } from "./components/OnboardingWizard";
+import { PlanSelection } from "./components/PlanSelection";
 
 // Default constants
 const DEFAULTS = {
@@ -46,9 +54,23 @@ interface FileInfo {
  * 8. Encrypted file is downloaded to user
  */
 function App() {
-  const [showLandingPage, setShowLandingPage] = useState(true);
+  const [showProductLanding, setShowProductLanding] = useState(true);
   const [showDemo, setShowDemo] = useState(false);
   const [appMode, setAppMode] = useState<'encrypt' | 'decrypt'>('encrypt');
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [showBeneficiaryRegistration, setShowBeneficiaryRegistration] = useState(false);
+  const [showBeneficiaryDashboard, setShowBeneficiaryDashboard] = useState(false);
+  const [showUserDashboard, setShowUserDashboard] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPlanSelection, setShowPlanSelection] = useState(false);
+  const [, setUserAccountType] = useState<'user' | 'beneficiary' | null>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
+  const [_selectedPlan, setSelectedPlan] = useState<'individual' | 'family' | null>(null);
+  const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
+  const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
+  const [ipfsCid, setIpfsCid] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
   const [status, setStatus] = useState<{
@@ -83,9 +105,229 @@ function App() {
   const [copiedShare1, setCopiedShare1] = useState(false);
   const [copiedShare2, setCopiedShare2] = useState(false);
 
-  // Show Landing Page
-  if (showLandingPage) {
-    return <LandingPage onTryDemo={() => setShowLandingPage(false)} />;
+  // Check authentication status on app load
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const accountType = localStorage.getItem('accountType');
+    const email = localStorage.getItem('userEmail');
+    const name = localStorage.getItem('userName');
+    const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+
+    if (token && accountType) {
+      // User is authenticated
+      setUserEmail(email || '');
+      setUserName(name || '');
+      setUserAccountType(accountType as 'user' | 'beneficiary');
+      setShowProductLanding(false);
+
+      if (accountType === 'beneficiary') {
+        // Beneficiary goes to beneficiary dashboard
+        setShowBeneficiaryDashboard(true);
+      } else {
+        // User account - check onboarding status
+        if (onboardingCompleted === 'true') {
+          // Onboarding complete - go to dashboard
+          setShowUserDashboard(true);
+        } else {
+          // Onboarding not complete - show onboarding
+          setShowOnboarding(true);
+        }
+      }
+    }
+  }, []);
+
+  // Show Product Landing Page (New Marketing Page)
+  if (showProductLanding) {
+    return (
+      <ProductLandingPage
+        onTryDemo={() => {
+          setShowProductLanding(false);
+          setShowDemo(true);
+        }}
+        onRegisterBeneficiary={() => {
+          setShowProductLanding(false);
+          setShowBeneficiaryRegistration(true);
+        }}
+        onLogin={() => {
+          setShowProductLanding(false);
+          setShowLogin(true);
+        }}
+      />
+    );
+  }
+
+  // Show Login Page
+  if (showLogin) {
+    return (
+      <LoginPage
+        onLoginSuccess={(token, user) => {
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('accountType', user.accountType);
+          localStorage.setItem('userEmail', user.email);
+          localStorage.setItem('userName', user.name || '');
+          setUserAccountType(user.accountType);
+          setUserEmail(user.email);
+          setUserName(user.name || '');
+          setShowLogin(false);
+
+          // Redirect based on account type
+          if (user.accountType === 'beneficiary') {
+            setShowBeneficiaryDashboard(true);
+          } else {
+            // For user accounts, check subscription status
+            const hasPlan = localStorage.getItem('subscriptionPlan');
+            const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+
+            if (hasPlan && !onboardingCompleted) {
+              // Has plan but not onboarded = force onboarding
+              setShowOnboarding(true);
+            } else {
+              // Either has plan and onboarded, or no plan = show dashboard
+              // Dashboard will show frozen state if no subscription
+              setShowUserDashboard(true);
+            }
+          }
+        }}
+        onBackToHome={() => {
+          setShowLogin(false);
+          setShowProductLanding(true);
+        }}
+        onRegisterClick={() => {
+          setShowLogin(false);
+          setShowRegistration(true);
+        }}
+      />
+    );
+  }
+
+  // Show Registration Page
+  if (showRegistration) {
+    return (
+      <RegistrationPage
+        onRegistrationComplete={(token, accountType, user) => {
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('accountType', accountType);
+          setUserAccountType(accountType);
+          if (user) {
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userName', user.name || '');
+            setUserEmail(user.email);
+            setUserName(user.name || '');
+          }
+          setShowRegistration(false);
+
+          // Redirect based on account type
+          if (accountType === 'beneficiary') {
+            setShowBeneficiaryDashboard(true);
+          } else {
+            // For user accounts, show user dashboard (will show frozen state if no subscription)
+            setShowUserDashboard(true);
+          }
+        }}
+        onBackToHome={() => {
+          setShowRegistration(false);
+          setShowProductLanding(true);
+        }}
+        onLoginClick={() => {
+          setShowRegistration(false);
+          setShowLogin(true);
+        }}
+      />
+    );
+  }
+
+
+  // Show Plan Selection
+  if (showPlanSelection) {
+    return (
+      <PlanSelection
+        onPlanSelected={(plan) => {
+          setSelectedPlan(plan);
+          localStorage.setItem('subscriptionPlan', plan);
+          setShowPlanSelection(false);
+          setShowOnboarding(true); // Force onboarding after plan purchase
+        }}
+        onSkip={() => {
+          setShowPlanSelection(false);
+          setShowUserDashboard(true); // Go to dashboard (will show frozen state)
+        }}
+      />
+    );
+  }
+
+  // Show Onboarding Wizard
+  if (showOnboarding) {
+    return (
+      <OnboardingWizard
+        onComplete={() => {
+          setShowOnboarding(false);
+          setShowUserDashboard(true);
+        }}
+        onSkip={() => {
+          // User chose to skip plan - go to frozen dashboard
+          setShowOnboarding(false);
+          setShowUserDashboard(true);
+        }}
+        userEmail={userEmail}
+        userName={userName}
+      />
+    );
+  }
+
+  // Show Beneficiary Registration Page
+  if (showBeneficiaryRegistration) {
+    return (
+      <BeneficiaryRegistrationPage
+        onRegistrationComplete={(token) => {
+          // Store token and redirect to beneficiary dashboard
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('accountType', 'beneficiary');
+          setShowBeneficiaryRegistration(false);
+          setShowBeneficiaryDashboard(true);
+        }}
+        onBackToHome={() => {
+          setShowBeneficiaryRegistration(false);
+          setShowProductLanding(true);
+        }}
+      />
+    );
+  }
+
+  // Show Beneficiary Dashboard
+  if (showBeneficiaryDashboard) {
+    return (
+      <BeneficiaryDashboard
+        onLogout={() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('accountType');
+          setUserAccountType(null);
+          setShowBeneficiaryDashboard(false);
+          setShowProductLanding(true);
+        }}
+      />
+    );
+  }
+
+  // Show User Dashboard
+  if (showUserDashboard) {
+    return (
+      <UserDashboard
+        onLogout={() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('accountType');
+          setUserAccountType(null);
+          setShowUserDashboard(false);
+          setShowProductLanding(true);
+        }}
+        onTryDemo={() => {
+          setShowUserDashboard(false);
+        }}
+        onBuyPlan={() => {
+          setShowUserDashboard(false);
+          setShowPlanSelection(true);
+        }}
+      />
+    );
   }
 
   // Show Shamir's Secret Sharing demo
@@ -498,7 +740,7 @@ function App() {
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <button
-              onClick={() => setShowLandingPage(true)}
+              onClick={() => setShowProductLanding(true)}
               style={{
                 padding: '12px 24px',
                 fontSize: '16px',

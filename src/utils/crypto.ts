@@ -63,7 +63,7 @@ async function deriveAesKey(password: string, salt: Uint8Array): Promise<CryptoK
     false,
     ["deriveKey"]
   );
-  
+
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
@@ -223,14 +223,66 @@ export function packEncryptedFile(
 ): Blob {
   const totalLength = salt.length + iv.length + encrypted.length;
   const packed = new Uint8Array(totalLength);
-  
+
   let offset = 0;
   packed.set(salt, offset);
   offset += salt.length;
   packed.set(iv, offset);
   offset += iv.length;
   packed.set(encrypted, offset);
-  
+
+  return new Blob([packed], { type: "application/octet-stream" });
+}
+
+/**
+ * 将加密数据打包为 .enc 文件格式（SSS 模式 v2）
+ * 格式: [version(1字节)][fileHashLen(1字节)][fileHash(66字节)][iv(12字节)][encrypted data]
+ * version = 0x03 表示 SSS 模式 v2 (with embedded file hash)
+ *
+ * @param encrypted - 加密后的数据
+ * @param iv - 初始化向量
+ * @param fileHash - 文件哈希 (0x + 64 hex chars)
+ */
+export function packEncryptedFileSSS(
+  encrypted: Uint8Array,
+  iv: Uint8Array,
+  fileHash?: string
+): Blob {
+  // Use v3 format if fileHash is provided, otherwise v2 for backward compatibility
+  if (fileHash) {
+    const version = new Uint8Array([0x03]); // SSS v2 mode with embedded hash
+    const fileHashBytes = new TextEncoder().encode(fileHash);
+    const hashLength = new Uint8Array([fileHashBytes.length]);
+
+    const totalLength = 1 + 1 + fileHashBytes.length + iv.length + encrypted.length;
+    const packed = new Uint8Array(totalLength);
+
+    let offset = 0;
+    packed.set(version, offset);
+    offset += 1;
+    packed.set(hashLength, offset);
+    offset += 1;
+    packed.set(fileHashBytes, offset);
+    offset += fileHashBytes.length;
+    packed.set(iv, offset);
+    offset += iv.length;
+    packed.set(encrypted, offset);
+
+    return new Blob([packed], { type: "application/octet-stream" });
+  }
+
+  // Legacy v2 format (no embedded hash)
+  const version = new Uint8Array([0x02]); // SSS mode marker
+  const totalLength = 1 + iv.length + encrypted.length;
+  const packed = new Uint8Array(totalLength);
+
+  let offset = 0;
+  packed.set(version, offset);
+  offset += 1;
+  packed.set(iv, offset);
+  offset += iv.length;
+  packed.set(encrypted, offset);
+
   return new Blob([packed], { type: "application/octet-stream" });
 }
 
@@ -298,7 +350,7 @@ export function unpackEncryptedFile(file: ArrayBuffer): {
   const salt = data.slice(0, 16);
   const iv = data.slice(16, 28);
   const encrypted = data.slice(28);
-  
+
   return { salt, iv, encrypted };
 }
 

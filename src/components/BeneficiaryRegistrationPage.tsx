@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface BeneficiaryRegistrationPageProps {
   onRegistrationComplete: (token: string) => void;
@@ -46,7 +48,7 @@ export default function BeneficiaryRegistrationPage({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary/account/register`, {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +83,7 @@ export default function BeneficiaryRegistrationPage({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/registration/verify-email`, {
+      const response = await fetch(`${API_URL}/auth/verify-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +114,7 @@ export default function BeneficiaryRegistrationPage({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/registration/resend-code`, {
+      const response = await fetch(`${API_URL}/auth/resend-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface LinkedUser {
   linkId: string;
@@ -101,7 +103,7 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
 
   const fetchLinkedUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary/account/linked-users`, {
+      const response = await fetch(`${API_URL}/beneficiary/linked-users`, {
         headers: getAuthHeaders(),
       });
 
@@ -121,7 +123,7 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
 
   const fetchDeathClaims = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary/death-claim`, {
+      const response = await fetch(`${API_URL}/beneficiary/death-claim`, {
         headers: getAuthHeaders(),
       });
 
@@ -145,7 +147,7 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary/death-claim/submit`, {
+      const response = await fetch(`${API_URL}/beneficiary/death-claim/submit`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ linkId: selectedUserForClaim.linkId }),
@@ -176,7 +178,7 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
     setError('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary/death-claim/${claimId}`, {
+      const response = await fetch(`${API_URL}/beneficiary/death-claim/${claimId}`, {
         headers: getAuthHeaders(),
       });
 

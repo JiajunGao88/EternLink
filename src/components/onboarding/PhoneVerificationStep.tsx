@@ -6,6 +6,9 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from '../../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface PhoneVerificationStepProps {
   onVerified: (phoneNumber: string) => void;
@@ -53,7 +56,7 @@ export const PhoneVerificationStep: React.FC<PhoneVerificationStepProps> = ({
 
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch('http://localhost:3001/api/2fa/send-sms', {
+      const response = await fetch(`${API_URL}/user/2fa/send-sms`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +91,7 @@ export const PhoneVerificationStep: React.FC<PhoneVerificationStepProps> = ({
     try {
       const token = localStorage.getItem('authToken');
       const cleaned = phoneNumber.replace(/\D/g, '');
-      const response = await fetch('http://localhost:3001/api/2fa/verify-sms', {
+      const response = await fetch(`${API_URL}/user/2fa/verify-sms`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

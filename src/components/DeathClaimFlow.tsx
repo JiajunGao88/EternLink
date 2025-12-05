@@ -10,7 +10,9 @@ import { motion } from 'framer-motion';
 import { Timeline, TimelineEvent } from './shared/Timeline';
 import { Modal } from './shared/Modal';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface DeathClaimDetails {
   claim: {
@@ -78,7 +80,7 @@ export const DeathClaimFlow: React.FC<DeathClaimFlowProps> = ({
   const fetchClaimDetails = async () => {
     if (!isRefreshing) setIsRefreshing(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary/death-claim/${claimId}`, {
+      const response = await fetch(`${API_URL}/beneficiary/death-claim/${claimId}`, {
         headers: getAuthHeaders(),
       });
 

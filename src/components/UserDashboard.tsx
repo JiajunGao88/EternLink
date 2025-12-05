@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface UserData {
   id: string;
@@ -82,7 +84,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/users/me`, {
+      const response = await fetch(`${API_URL}/user/me`, {
         headers: getAuthHeaders(),
       });
 
@@ -102,7 +104,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
 
   const fetchLinkedBeneficiaries = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary-account/linked-beneficiaries`, {
+      const response = await fetch(`${API_URL}/beneficiary/linked`, {
         headers: getAuthHeaders(),
       });
 
@@ -120,7 +122,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
 
   const fetchHeartbeatStatus = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/heartbeat/status`, {
+      const response = await fetch(`${API_URL}/heartbeat/status`, {
         headers: getAuthHeaders(),
       });
 
@@ -138,7 +140,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
 
   const fetchPendingClaims = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary/death-claim/pending-against-me`, {
+      const response = await fetch(`${API_URL}/beneficiary/death-claim/pending-against-me`, {
         headers: getAuthHeaders(),
       });
 
@@ -159,7 +161,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
     setSuccess('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary/death-claim/respond`, {
+      const response = await fetch(`${API_URL}/beneficiary/death-claim/respond`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ claimId }),
@@ -183,7 +185,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
     setSuccess('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/heartbeat/send`, {
+      const response = await fetch(`${API_URL}/heartbeat/send`, {
         method: 'POST',
         headers: getAuthHeaders(),
       });
@@ -206,7 +208,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
     setSuccess('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/beneficiary-account/generate-refer-code`, {
+      const response = await fetch(`${API_URL}/beneficiary/generate-refer-code`, {
         method: 'POST',
         headers: getAuthHeaders(),
       });

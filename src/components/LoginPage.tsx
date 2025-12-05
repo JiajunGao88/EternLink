@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface LoginPageProps {
   onLoginSuccess: (token: string, user: any) => void;
@@ -21,7 +23,7 @@ export default function LoginPage({ onLoginSuccess, onBackToHome, onRegisterClic
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/registration/login`, {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface RegistrationPageProps {
   onRegistrationComplete: (token: string, accountType: 'user' | 'beneficiary', user?: { email: string; name?: string }) => void;
@@ -54,9 +56,7 @@ export default function RegistrationPage({
     setLoading(true);
 
     try {
-      const endpoint = accountType === 'user'
-        ? `${API_BASE_URL}/registration/register`
-        : `${API_BASE_URL}/beneficiary/account/register`;
+      const endpoint = `${API_URL}/auth/register`;
 
       const body = accountType === 'user'
         ? { email, password }
@@ -98,7 +98,7 @@ export default function RegistrationPage({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/registration/verify-email`, {
+      const response = await fetch(`${API_URL}/auth/verify-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ export default function RegistrationPage({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/registration/resend-code`, {
+      const response = await fetch(`${API_URL}/auth/resend-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

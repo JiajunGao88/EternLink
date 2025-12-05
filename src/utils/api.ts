@@ -16,7 +16,7 @@ export async function registerFileHash(
   mime: string
 ): Promise<{ success: boolean; txHash?: string; blockNumber?: number; error?: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/register`, {
+    const response = await fetch(`${API_BASE_URL}/api/blockchain/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export async function registerFileHashSSS(
   mime: string
 ): Promise<{ success: boolean; txHash?: string; blockNumber?: number; error?: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/register`, {
+    const response = await fetch(`${API_BASE_URL}/api/blockchain/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -99,7 +99,7 @@ export async function verifyFileHash(
   fileHash: string
 ): Promise<{ success: boolean; exists?: boolean; error?: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/verify/${fileHash}`, {
+    const response = await fetch(`${API_BASE_URL}/api/blockchain/verify/${fileHash}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ export async function getKeyShare3FromBlockchain(
   error?: string 
 }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/keyshare/${fileHash}`, {
+    const response = await fetch(`${API_BASE_URL}/api/blockchain/keyshare/${fileHash}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

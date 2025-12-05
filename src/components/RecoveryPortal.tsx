@@ -10,6 +10,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Stepper, Step } from './shared/Stepper';
 import { sha256 } from '../utils/crypto';
 import { reconstructKey, isValidShare } from '../utils/secretSharing';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 type RecoveryStep = 'upload' | 'verify' | 'shares' | 'decrypt' | 'complete';
 
@@ -69,7 +72,7 @@ export const RecoveryPortal: React.FC<RecoveryPortalProps> = ({ onBack }) => {
 
     try {
       // Call blockchain verification API
-      const response = await fetch(`http://localhost:3001/api/files/verify/${fileHash}`);
+      const response = await fetch(`${API_URL}/files/verify/${fileHash}`);
       const data = await response.json();
 
       if (!response.ok) {

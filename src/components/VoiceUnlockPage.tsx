@@ -7,6 +7,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface VoiceUnlockPageProps {
   freezeReason?: string;
@@ -121,7 +124,7 @@ export const VoiceUnlockPage: React.FC<VoiceUnlockPageProps> = ({
         const base64Audio = reader.result as string;
 
         const token = localStorage.getItem('authToken');
-        const response = await fetch('http://localhost:3001/api/account/voice/verify', {
+        const response = await fetch(`${API_URL}/user/voice/verify`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -6,6 +6,9 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface VoiceSignatureStepProps {
   onSaved: (voiceSignature: string) => void;
@@ -134,7 +137,7 @@ export const VoiceSignatureStep: React.FC<VoiceSignatureStepProps> = ({ onSaved 
           const base64Audio = reader.result as string;
 
           const token = localStorage.getItem('authToken');
-          const response = await fetch('http://localhost:3001/api/account/voice/upload', {
+          const response = await fetch(`${API_URL}/user/voice/upload`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

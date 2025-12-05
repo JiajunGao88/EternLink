@@ -6,6 +6,9 @@
  */
 
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 import { WizardContainer, WizardStep } from './shared/WizardContainer';
 import { WelcomeStep } from './onboarding/WelcomeStep';
 import { NotificationStep, NotificationConfig } from './onboarding/NotificationStep';
@@ -60,7 +63,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       if (token) {
         try {
           // Save onboarding data to backend
-          const response = await fetch('http://localhost:3001/api/account/complete-onboarding', {
+          const response = await fetch(`${API_URL}/user/complete-onboarding`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -108,7 +111,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       if (token) {
         try {
           // Save onboarding data to backend (same as complete)
-          const response = await fetch('http://localhost:3001/api/account/complete-onboarding', {
+          const response = await fetch(`${API_URL}/user/complete-onboarding`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

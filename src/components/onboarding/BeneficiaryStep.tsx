@@ -6,6 +6,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface Beneficiary {
   name: string;
@@ -39,7 +42,7 @@ export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onChange }) =>
       // Base URL for registration
       const registrationUrl = `${window.location.origin}/beneficiary-register?code=${referCode}`;
 
-      const response = await fetch('http://localhost:3001/api/beneficiary/send-invitation', {
+      const response = await fetch(`${API_URL}/beneficiary/send-invitation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +76,7 @@ export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onChange }) =>
 
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch('http://localhost:3001/api/beneficiary/account/generate-refer-code', {
+      const response = await fetch(`${API_URL}/beneficiary/generate-refer-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

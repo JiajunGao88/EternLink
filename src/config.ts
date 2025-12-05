@@ -1,10 +1,16 @@
 // API Configuration
-// Production: Use Cloudflare Workers API at api.eternlink.co
-// Development: Use local API or Cloudflare Workers dev
+// Production: Use Cloudflare Workers API
+// Development: Use local Workers dev server (http://127.0.0.1:8787)
 // Can be overridden with VITE_API_BASE_URL environment variable
+
+const isDev = (import.meta as any).env?.MODE === 'development';
+
 export const API_BASE_URL = 
   (import.meta as any).env?.VITE_API_BASE_URL || 
-  'https://api.eternlink.co';  // Default to production API
+  (isDev 
+    ? 'http://127.0.0.1:8787'  // Local Workers dev
+    : 'https://eternlink-api-production.garygao922.workers.dev'  // Production Workers API
+  );
 
 // Contract addresses (for reference, not used in frontend anymore)
 export const CONTRACT_ADDRESSES: { [chainId: number]: string } = {

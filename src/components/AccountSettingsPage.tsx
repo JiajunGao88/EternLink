@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 interface AccountSettingsPageProps {
   token: string;
@@ -47,7 +49,7 @@ export default function AccountSettingsPage({ token, onLogout }: AccountSettings
 
   const fetchUserAccount = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/account/status`, {
+      const response = await fetch(`${API_URL}/user/status`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -99,7 +101,7 @@ export default function AccountSettingsPage({ token, onLogout }: AccountSettings
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/account/settings`, {
+      const response = await fetch(`${API_URL}/user/settings`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -126,7 +128,7 @@ export default function AccountSettingsPage({ token, onLogout }: AccountSettings
     setSuccess('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/account/phone/send-code`, {
+      const response = await fetch(`${API_URL}/user/phone/send-code`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -152,7 +154,7 @@ export default function AccountSettingsPage({ token, onLogout }: AccountSettings
     setSuccess('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/account/phone/verify`, {
+      const response = await fetch(`${API_URL}/user/phone/verify`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -221,7 +223,7 @@ export default function AccountSettingsPage({ token, onLogout }: AccountSettings
     setSuccess('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/account/voice/upload`, {
+      const response = await fetch(`${API_URL}/user/voice/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

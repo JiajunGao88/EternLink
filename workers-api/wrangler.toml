@@ -1,0 +1,50 @@
+# EternLink Workers API - Full Backend
+name = "eternlink-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "eternlink-db"
+database_id = "8a2de35e-94ed-4a5c-bb35-274fbc7deb5b"
+
+# R2 Storage binding (for encrypted files)
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "eternlink-files"
+
+# KV Namespace binding (for sessions/cache)
+[[kv_namespaces]]
+binding = "KV"
+id = "5432646a1ea34dce94a1860a9b945487"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "development"
+FRONTEND_URL = "http://localhost:5173"
+JWT_EXPIRES_IN = "7d"
+
+# Production environment
+[env.production]
+name = "eternlink-api-production"
+vars = { ENVIRONMENT = "production", FRONTEND_URL = "https://eternlink.pages.dev", JWT_EXPIRES_IN = "7d" }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "eternlink-db"
+database_id = "8a2de35e-94ed-4a5c-bb35-274fbc7deb5b"
+
+[[env.production.r2_buckets]]
+binding = "FILES"
+bucket_name = "eternlink-files"
+
+[[env.production.kv_namespaces]]
+binding = "KV"
+id = "5432646a1ea34dce94a1860a9b945487"
+
+# Cron Triggers for scheduled tasks (heartbeat check, etc.)
+[triggers]
+crons = ["0 0 * * *"]  # Daily at midnight UTC - check heartbeats
+

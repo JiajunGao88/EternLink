@@ -1,16 +1,21 @@
 /**
  * Enhanced Shamir's Secret Sharing Demo Component
- * Incrementally adding features with logo-matching design
+ * Design synchronized with ProductLandingPage
  */
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import QRCode from 'qrcode';
 import {
   splitPassword,
   type PasswordShares
 } from '../utils/secretSharing';
 
-export default function ShamirDemoEnhanced() {
+interface ShamirDemoEnhancedProps {
+  onBack?: () => void;
+}
+
+export default function ShamirDemoEnhanced({ onBack }: ShamirDemoEnhancedProps) {
   const [password, setPassword] = useState('');
   const [shares, setShares] = useState<PasswordShares | null>(null);
   const [fileHash] = useState('0xabc123def456'); // Demo file hash
@@ -56,73 +61,94 @@ export default function ShamirDemoEnhanced() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0a1628 0%, #0f1e2e 50%, #1a2942 100%)',
-      padding: '60px 20px',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
-    }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#1a2942] to-[#0a1628] text-white">
+      {/* Fixed Navigation Bar */}
+      <motion.nav
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/80 backdrop-blur-md border-b border-[#C0C8D4]/10"
+      >
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+                <path
+                  d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
+                  stroke="#C0C8D4"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M12 24H18L21 18L24 30L27 20L30 24H36"
+                  stroke="#3DA288"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#C0C8D4] to-[#3DA288] bg-clip-text text-transparent">
+                EternLink
+              </span>
+            </div>
 
+            {/* Nav Button */}
+            <button
+              onClick={onBack}
+              className="px-6 py-2 text-[#C0C8D4] hover:text-[#3DA288] transition-colors font-medium"
+            >
+              ← Back to Main App
+            </button>
+          </div>
+        </div>
+      </motion.nav>
+
+      {/* Spacer for fixed nav */}
+      <div className="h-20"></div>
+
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '40px'
-        }}>
-          <h1 style={{
-            fontSize: '42px',
-            margin: 0,
-            color: '#C0C8D4',
-            fontWeight: '700'
-          }}>
-            Shamir's Secret Sharing
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-10"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <span className="bg-gradient-to-r from-[#C0C8D4] to-[#3DA288] bg-clip-text text-transparent">
+              Shamir's Secret Sharing
+            </span>
           </h1>
-          <p style={{
-            fontSize: '16px',
-            color: '#8b96a8',
-            marginTop: '12px'
-          }}>
+          <p className="text-lg text-[#8b96a8]">
             Split your password into 3 shares · Any 2 shares can reconstruct it
           </p>
-        </div>
+        </motion.div>
 
         {/* Error Message */}
         {error && (
-          <div style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#ef4444',
-            padding: '16px 20px',
-            borderRadius: '12px',
-            marginBottom: '30px',
-            maxWidth: '600px',
-            margin: '0 auto 30px'
-          }}>
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500/10 border border-red-500/30 text-red-400 px-5 py-4 rounded-xl mb-8 max-w-xl mx-auto"
+          >
             ⚠️ {error}
-          </div>
+          </motion.div>
         )}
 
         {/* Input Section */}
-        <section style={{
-          backgroundColor: 'rgba(26, 41, 66, 0.6)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(139, 157, 195, 0.2)',
-          borderRadius: '16px',
-          padding: '32px',
-          marginBottom: '40px',
-          maxWidth: '600px',
-          margin: '0 auto 40px'
-        }}>
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#8b96a8',
-              marginBottom: '8px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em'
-            }}>
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="bg-gradient-to-br from-[#1a2942] to-[#0a1628] backdrop-blur-xl border border-[#3DA288]/20 rounded-2xl p-8 mb-10 max-w-xl mx-auto"
+        >
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-[#8b96a8] mb-2 uppercase tracking-wider">
               Enter Password (minimum 8 characters)
             </label>
             <input
@@ -130,329 +156,150 @@ export default function ShamirDemoEnhanced() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter a strong password..."
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                backgroundColor: 'rgba(15, 30, 46, 0.8)',
-                border: '1px solid rgba(192, 200, 212, 0.3)',
-                borderRadius: '8px',
-                fontSize: '16px',
-                color: '#C0C8D4',
-                outline: 'none',
-                transition: 'border-color 0.3s ease',
-                boxSizing: 'border-box'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#C0C8D4'}
-              onBlur={(e) => e.target.style.borderColor = 'rgba(192, 200, 212, 0.3)'}
+              className="w-full px-4 py-3.5 bg-[#0f1e2e]/80 border border-[#C0C8D4]/30 rounded-lg text-[#C0C8D4] placeholder-[#8b96a8]/50 focus:border-[#3DA288] focus:outline-none transition-colors"
             />
           </div>
 
           <button
             onClick={handleSplit}
             disabled={!password}
-            style={{
-              width: '100%',
-              padding: '14px 24px',
-              background: password ? 'linear-gradient(135deg, #A8B2C0 0%, #C0C8D4 100%)' : '#555',
-              color: '#0a1628',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: password ? 'pointer' : 'not-allowed',
-              transition: 'all 0.3s ease',
-              opacity: password ? 1 : 0.5
-            }}
+            className={`w-full py-4 rounded-xl font-semibold text-base transition-all ${
+              password
+                ? 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white hover:shadow-lg hover:shadow-[#3DA288]/30 hover:scale-[1.02]'
+                : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+            }`}
           >
             🔐 Split Password into 3 Shares
           </button>
-        </section>
+        </motion.section>
 
         {/* Shares Display */}
         {shares && (
-          <section>
-            <h2 style={{
-              fontSize: '24px',
-              color: '#C0C8D4',
-              marginBottom: '24px',
-              textAlign: 'center'
-            }}>
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="text-2xl font-bold text-[#C0C8D4] mb-6 text-center">
               Generated Shares
             </h2>
 
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '20px'
-            }}>
+            <div className="grid md:grid-cols-3 gap-6">
               {/* Share 1 - User Device */}
-              <div style={{
-                backgroundColor: 'rgba(26, 41, 66, 0.6)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(139, 157, 195, 0.2)',
-                borderRadius: '16px',
-                padding: '24px',
-                position: 'relative'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '16px',
-                  right: '16px',
-                  width: '32px',
-                  height: '32px',
-                  backgroundColor: 'rgba(139, 157, 195, 0.2)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  color: '#8b9dc3'
-                }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="bg-gradient-to-br from-[#1a2942] to-[#0a1628] border border-[#C0C8D4]/20 rounded-2xl p-6 relative"
+              >
+                <div className="absolute top-4 right-4 w-8 h-8 bg-[#C0C8D4]/20 rounded-full flex items-center justify-center text-sm font-bold text-[#C0C8D4]">
                   1
                 </div>
 
-                <h3 style={{
-                  fontSize: '18px',
-                  color: '#C0C8D4',
-                  marginBottom: '8px',
-                  fontWeight: '600'
-                }}>
+                <h3 className="text-lg font-semibold text-[#C0C8D4] mb-2">
                   📱 Share 1
                 </h3>
-                <p style={{
-                  fontSize: '13px',
-                  color: '#8b96a8',
-                  marginBottom: '16px'
-                }}>
+                <p className="text-sm text-[#8b96a8] mb-4">
                   Stored on User Device
                 </p>
 
-                <div style={{
-                  backgroundColor: 'rgba(15, 30, 46, 0.8)',
-                  border: '1px solid rgba(192, 200, 212, 0.2)',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  marginBottom: '12px'
-                }}>
-                  <code style={{
-                    fontSize: '11px',
-                    color: '#C0C8D4',
-                    wordBreak: 'break-all',
-                    fontFamily: 'monospace'
-                  }}>
+                <div className="bg-[#0f1e2e] border border-[#C0C8D4]/20 rounded-lg p-3 mb-3">
+                  <code className="text-xs text-[#C0C8D4] break-all font-mono">
                     {shares.shareOne}
                   </code>
                 </div>
 
                 <button
                   onClick={() => copyToClipboard(shares.shareOne, 'Share 1')}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    backgroundColor: 'rgba(192, 200, 212, 0.2)',
-                    border: '1px solid rgba(192, 200, 212, 0.3)',
-                    borderRadius: '6px',
-                    color: '#C0C8D4',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(192, 200, 212, 0.3)'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(192, 200, 212, 0.2)'}
+                  className="w-full py-2.5 bg-[#C0C8D4]/20 border border-[#C0C8D4]/30 rounded-lg text-[#C0C8D4] text-sm font-medium hover:bg-[#C0C8D4]/30 transition-colors"
                 >
                   📋 Copy Share 1
                 </button>
-              </div>
+              </motion.div>
 
               {/* Share 2 - Beneficiary */}
-              <div style={{
-                backgroundColor: 'rgba(26, 41, 66, 0.6)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 193, 7, 0.3)',
-                borderRadius: '16px',
-                padding: '24px',
-                position: 'relative'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '16px',
-                  right: '16px',
-                  width: '32px',
-                  height: '32px',
-                  backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  color: '#ffc107'
-                }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="bg-gradient-to-br from-[#1a2942] to-[#0a1628] border border-[#ffc107]/30 rounded-2xl p-6 relative"
+              >
+                <div className="absolute top-4 right-4 w-8 h-8 bg-[#ffc107]/20 rounded-full flex items-center justify-center text-sm font-bold text-[#ffc107]">
                   2
                 </div>
 
-                <h3 style={{
-                  fontSize: '18px',
-                  color: '#C0C8D4',
-                  marginBottom: '8px',
-                  fontWeight: '600',
-                  textAlign: 'center'
-                }}>
+                <h3 className="text-lg font-semibold text-[#C0C8D4] mb-2 text-center">
                   📄 Share 2
                 </h3>
-                <p style={{
-                  fontSize: '13px',
-                  color: '#8b96a8',
-                  marginBottom: '24px',
-                  textAlign: 'center'
-                }}>
+                <p className="text-sm text-[#8b96a8] mb-4 text-center">
                   Given to Beneficiary (Offline)
                 </p>
 
-                {/* QR Code Display - Only show QR code */}
+                {/* QR Code Display */}
                 {qrCodeUrl && (
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '12px'
-                  }}>
-                    <div style={{
-                      padding: '16px',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-                    }}>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="p-4 bg-white rounded-xl shadow-lg">
                       <img
                         src={qrCodeUrl}
                         alt="QR Code for Share 2"
-                        style={{
-                          width: '256px',
-                          height: '256px',
-                          display: 'block'
-                        }}
+                        className="w-48 h-48 block"
                       />
                     </div>
-                    <p style={{
-                      fontSize: '12px',
-                      color: '#8b96a8',
-                      textAlign: 'center',
-                      margin: 0
-                    }}>
+                    <p className="text-xs text-[#8b96a8] text-center">
                       Scan to view beneficiary share
                     </p>
                   </div>
                 )}
-              </div>
+              </motion.div>
 
               {/* Share 3 - File Metadata */}
-              <div style={{
-                backgroundColor: 'rgba(26, 41, 66, 0.6)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(23, 162, 184, 0.3)',
-                borderRadius: '16px',
-                padding: '24px',
-                position: 'relative'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '16px',
-                  right: '16px',
-                  width: '32px',
-                  height: '32px',
-                  backgroundColor: 'rgba(23, 162, 184, 0.2)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  color: '#17a2b8'
-                }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="bg-gradient-to-br from-[#1a2942] to-[#0a1628] border border-[#3DA288]/30 rounded-2xl p-6 relative"
+              >
+                <div className="absolute top-4 right-4 w-8 h-8 bg-[#3DA288]/20 rounded-full flex items-center justify-center text-sm font-bold text-[#3DA288]">
                   3
                 </div>
 
-                <h3 style={{
-                  fontSize: '18px',
-                  color: '#C0C8D4',
-                  marginBottom: '8px',
-                  fontWeight: '600'
-                }}>
+                <h3 className="text-lg font-semibold text-[#C0C8D4] mb-2">
                   🗂️ Share 3
                 </h3>
-                <p style={{
-                  fontSize: '13px',
-                  color: '#8b96a8',
-                  marginBottom: '16px'
-                }}>
+                <p className="text-sm text-[#8b96a8] mb-4">
                   Embedded in File Metadata
                 </p>
 
-                <div style={{
-                  backgroundColor: 'rgba(15, 30, 46, 0.8)',
-                  border: '1px solid rgba(192, 200, 212, 0.2)',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  marginBottom: '12px'
-                }}>
-                  <code style={{
-                    fontSize: '11px',
-                    color: '#C0C8D4',
-                    wordBreak: 'break-all',
-                    fontFamily: 'monospace'
-                  }}>
+                <div className="bg-[#0f1e2e] border border-[#C0C8D4]/20 rounded-lg p-3 mb-3">
+                  <code className="text-xs text-[#C0C8D4] break-all font-mono">
                     {shares.shareThree}
                   </code>
                 </div>
 
                 <button
                   onClick={() => copyToClipboard(shares.shareThree, 'Share 3')}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    backgroundColor: 'rgba(192, 200, 212, 0.2)',
-                    border: '1px solid rgba(192, 200, 212, 0.3)',
-                    borderRadius: '6px',
-                    color: '#C0C8D4',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(192, 200, 212, 0.3)'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(192, 200, 212, 0.2)'}
+                  className="w-full py-2.5 bg-[#C0C8D4]/20 border border-[#C0C8D4]/30 rounded-lg text-[#C0C8D4] text-sm font-medium hover:bg-[#C0C8D4]/30 transition-colors"
                 >
                   📋 Copy Share 3
                 </button>
-              </div>
+              </motion.div>
             </div>
 
             {/* Info Box */}
-            <div style={{
-              marginTop: '32px',
-              padding: '20px',
-              backgroundColor: 'rgba(192, 200, 212, 0.05)',
-              border: '1px solid rgba(192, 200, 212, 0.15)',
-              borderRadius: '12px',
-              textAlign: 'center'
-            }}>
-              <p style={{
-                color: '#8b96a8',
-                fontSize: '14px',
-                margin: 0
-              }}>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="mt-8 p-5 bg-[#3DA288]/10 border border-[#3DA288]/20 rounded-xl text-center"
+            >
+              <p className="text-[#C0C8D4] text-sm mb-2">
                 ✅ Any 2 of these 3 shares can reconstruct your original password
               </p>
-              <p style={{
-                color: '#8b96a8',
-                fontSize: '14px',
-                margin: '8px 0 0',
-                opacity: 0.7
-              }}>
+              <p className="text-[#8b96a8] text-sm opacity-70">
                 A single share reveals zero information about the password
               </p>
-            </div>
-          </section>
+            </motion.div>
+          </motion.section>
         )}
       </div>
     </div>

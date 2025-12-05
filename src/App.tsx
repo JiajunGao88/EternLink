@@ -14,7 +14,6 @@ import {
 } from "./utils/crypto";
 import { splitKey, reconstructKey, type KeyShares } from "./utils/secretSharing";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
-// import LandingPage from "./components/LandingPage";
 import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain } from "./utils/api";
 import ProductLandingPage from "./components/ProductLandingPage";
 import BeneficiaryRegistrationPage from "./components/BeneficiaryRegistrationPage";
@@ -139,7 +138,6 @@ function App() {
       <ProductLandingPage
         onTryDemo={() => {
           setShowProductLanding(false);
-          setShowDemo(true);
         }}
         onRegisterBeneficiary={() => {
           setShowProductLanding(false);
@@ -329,34 +327,7 @@ function App() {
 
   // Show Shamir's Secret Sharing demo
   if (showDemo) {
-    return (
-      <div style={{ minHeight: '100vh' }}>
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 1000
-        }}>
-          <button
-            onClick={() => setShowDemo(false)}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              backgroundColor: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-            }}
-          >
-            ← Back to Main App
-          </button>
-        </div>
-        <ShamirDemoEnhanced />
-      </div>
-    );
+    return <ShamirDemoEnhanced onBack={() => setShowDemo(false)} />;
   }
 
 
@@ -703,131 +674,93 @@ function App() {
   };
 
   return (
-    <div style={styles.container}>
-      {/* Header with Logo */}
-      <motion.div
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#1a2942] to-[#0a1628] text-white">
+      {/* Fixed Navigation Bar */}
+      <motion.nav
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        style={styles.header}
+        className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/80 backdrop-blur-md border-b border-[#C0C8D4]/10"
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={styles.logoContainer}>
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              {/* Shield outline - single path */}
-              <path
-                d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
-                stroke="var(--accent-primary)"
-                strokeWidth="2.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {/* Heartbeat/EKG line in the middle */}
-              <path
-                d="M12 24H18L21 18L24 30L27 20L30 24H36"
-                stroke="var(--accent-primary)"
-                strokeWidth="2.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <h1 style={styles.title}>EternLink</h1>
-          </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button
-              onClick={() => setShowProductLanding(true)}
-              style={{
-                padding: '12px 24px',
-                fontSize: '16px',
-                backgroundColor: 'transparent',
-                color: 'var(--text-secondary)',
-                border: '1px solid var(--card-border)',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                e.currentTarget.style.color = 'var(--accent-primary)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = 'var(--card-border)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }}
-            >
-              ← Back to Home
-            </button>
-            <button
-              onClick={() => setShowDemo(true)}
-              style={{
-                padding: '12px 24px',
-                fontSize: '16px',
-                backgroundColor: 'var(--accent-primary)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--accent-secondary)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--accent-primary)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-               Try Shamir Demo
-            </button>
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+                <path
+                  d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
+                  stroke="#C0C8D4"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M12 24H18L21 18L24 30L27 20L30 24H36"
+                  stroke="#3DA288"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#C0C8D4] to-[#3DA288] bg-clip-text text-transparent">
+                EternLink
+              </span>
+            </div>
+
+            {/* Nav Buttons */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowProductLanding(true)}
+                className="px-6 py-2 text-[#C0C8D4] hover:text-[#3DA288] transition-colors font-medium"
+              >
+                ← Back to Home
+              </button>
+              <button
+                onClick={() => setShowDemo(true)}
+                className="px-6 py-2 bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-[#3DA288]/30 transition-all"
+              >
+                Try Shamir Demo
+              </button>
+            </div>
           </div>
         </div>
-        <p style={styles.subtitle}>Blockchain Proof of Existence · Eternal Protection for Your Digital Assets</p>
+      </motion.nav>
+
+      {/* Spacer for fixed nav */}
+      <div className="h-20"></div>
+
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="text-center py-8"
+      >
+        <p className="text-lg text-[#8b96a8]">Blockchain Proof of Existence · Eternal Protection for Your Digital Assets</p>
       </motion.div>
 
       {/* Mode Toggle */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-        <div style={{
-          display: 'flex',
-          background: 'var(--card-bg)',
-          borderRadius: '12px',
-          padding: '4px',
-          border: '1px solid var(--card-border)'
-        }}>
+      <div className="flex justify-center mb-6">
+        <div className="flex bg-[#1a2942]/60 backdrop-blur-md rounded-xl p-1 border border-[#C0C8D4]/20">
           <button
             onClick={() => { setAppMode('encrypt'); setFile(null); setFileInfo(null); setEncryptedFile(null); setStatus(null); setKeyShares(null); setShowShares(false); }}
-            style={{
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '14px',
-              transition: 'all 0.3s ease',
-              background: appMode === 'encrypt' ? 'var(--accent-primary)' : 'transparent',
-              color: appMode === 'encrypt' ? 'white' : 'var(--text-secondary)',
-            }}
+            className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all ${
+              appMode === 'encrypt'
+                ? 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white shadow-lg shadow-[#3DA288]/30'
+                : 'text-[#8b96a8] hover:text-[#C0C8D4]'
+            }`}
           >
             🔒 Encrypt & Register
           </button>
           <button
             onClick={() => { setAppMode('decrypt'); setFile(null); setFileInfo(null); setEncryptedFile(null); setStatus(null); setShareA(''); setShareB(''); }}
-            style={{
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '14px',
-              transition: 'all 0.3s ease',
-              background: appMode === 'decrypt' ? 'var(--accent-primary)' : 'transparent',
-              color: appMode === 'decrypt' ? 'white' : 'var(--text-secondary)',
-            }}
+            className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all ${
+              appMode === 'decrypt'
+                ? 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white shadow-lg shadow-[#3DA288]/30'
+                : 'text-[#8b96a8] hover:text-[#C0C8D4]'
+            }`}
           >
             🔓 Decrypt File
           </button>
@@ -835,18 +768,17 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div style={styles.content}>
+      <div className="max-w-2xl mx-auto px-6 pb-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          style={styles.primaryPanel}
         >
-          <div style={styles.card}>
-            <h3 style={styles.cardTitle}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
-                <path d="M4 4C4 2.89543 4.89543 2 6 2H11L16 7V16C16 17.1046 15.1046 18 14 18H6C4.89543 18 4 17.1046 4 16V4Z" stroke="var(--accent-primary)" strokeWidth="1.5" fill="none"/>
-                <path d="M11 2V7H16" stroke="var(--accent-primary)" strokeWidth="1.5"/>
+          <div className="bg-gradient-to-br from-[#1a2942] to-[#0a1628] backdrop-blur-xl border border-[#3DA288]/20 rounded-2xl p-8 shadow-xl">
+            <h3 className="text-xl font-bold text-[#C0C8D4] mb-6 flex items-center">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="mr-2">
+                <path d="M4 4C4 2.89543 4.89543 2 6 2H11L16 7V16C16 17.1046 15.1046 18 14 18H6C4.89543 18 4 17.1046 4 16V4Z" stroke="#3DA288" strokeWidth="1.5" fill="none"/>
+                <path d="M11 2V7H16" stroke="#3DA288" strokeWidth="1.5"/>
               </svg>
               {appMode === 'encrypt' ? 'Encrypt & Register File' : 'Decrypt File'}
             </h3>
@@ -854,28 +786,31 @@ function App() {
             {/* ENCRYPT MODE */}
             {appMode === 'encrypt' && (
               <>
-                <div style={styles.uploadArea}>
+                <div className="mb-6">
                   <input
                     type="file"
                     onChange={handleFileSelect}
-                    style={styles.fileInput}
+                    className="hidden"
                     id="file-upload"
                   />
-                  <label htmlFor="file-upload" style={styles.uploadLabel}>
+                  <label
+                    htmlFor="file-upload"
+                    className="flex flex-col items-center justify-center p-12 bg-[#0f1e2e]/80 border-2 border-dashed border-[#C0C8D4]/30 rounded-xl cursor-pointer hover:border-[#3DA288]/50 transition-all min-h-[200px]"
+                  >
                     <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                      <path d="M24 8V32M24 8L16 16M24 8L32 16" stroke="var(--accent-primary)" strokeWidth="2.5" strokeLinecap="round"/>
-                      <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="var(--accent-secondary)" strokeWidth="2.5" strokeLinecap="round"/>
+                      <path d="M24 8V32M24 8L16 16M24 8L32 16" stroke="#C0C8D4" strokeWidth="2.5" strokeLinecap="round"/>
+                      <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="#3DA288" strokeWidth="2.5" strokeLinecap="round"/>
                     </svg>
-                    <span style={styles.uploadText}>
+                    <span className="text-base font-semibold text-[#C0C8D4] mt-4">
                       {file ? file.name : 'Click to select file'}
                     </span>
                     {file && (
-                      <span style={styles.uploadHint}>
+                      <span className="text-sm text-[#8b96a8] mt-1">
                         {(file.size / 1024).toFixed(2)} KB
                       </span>
                     )}
                     {!file && (
-                      <span style={styles.uploadHint}>
+                      <span className="text-sm text-[#8b96a8] mt-1">
                         Supports all file types
                       </span>
                     )}
@@ -883,32 +818,26 @@ function App() {
                 </div>
 
                 {/* SSS Info Banner */}
-                <div style={{
-                  background: 'rgba(139, 157, 195, 0.1)',
-                  border: '1px solid rgba(139, 157, 195, 0.3)',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  marginBottom: '20px',
-                }}>
-                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                    <strong style={{ color: 'var(--accent-primary)' }}>🔐 2-of-3 Key Splitting</strong><br/>
+                <div className="bg-[#3DA288]/10 border border-[#3DA288]/30 rounded-lg p-4 mb-6">
+                  <div className="text-sm text-[#8b96a8] leading-relaxed">
+                    <strong className="text-[#3DA288]">🔐 2-of-3 Key Splitting</strong><br/>
                     Your file will be encrypted with a random key, then the key is split into 3 shares.
                     Any 2 shares can decrypt the file. No password needed!
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div style={styles.buttonGroup}>
+                <div className="grid grid-cols-2 gap-4">
                   <button
                     onClick={handleEncryptAndRegister}
                     disabled={loading || !file}
-                    style={{
-                      ...styles.actionButton,
-                      ...styles.primaryAction,
-                      ...(loading || !file ? styles.disabledButton : {})
-                    }}
+                    className={`flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white transition-all ${
+                      loading || !file
+                        ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                        : 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] hover:shadow-lg hover:shadow-[#3DA288]/30 hover:scale-[1.02]'
+                    }`}
                   >
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="mr-2">
                       <rect x="5" y="9" width="10" height="8" rx="1" stroke="white" strokeWidth="1.5" fill="none"/>
                       <path d="M7 9V6C7 4.34315 8.34315 3 10 3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5"/>
                       <circle cx="10" cy="13" r="1" fill="white"/>
@@ -919,13 +848,13 @@ function App() {
                   <button
                     onClick={handleVerifyFile}
                     disabled={loading || !file}
-                    style={{
-                      ...styles.actionButton,
-                      ...styles.secondaryAction,
-                      ...(loading || !file ? styles.disabledButton : {})
-                    }}
+                    className={`flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white transition-all ${
+                      loading || !file
+                        ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                        : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-[1.02]'
+                    }`}
                   >
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="mr-2">
                       <circle cx="9" cy="9" r="6" stroke="white" strokeWidth="1.5" fill="none"/>
                       <path d="M14 14L18 18" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
                       <path d="M7 9L8.5 10.5L12 7" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
@@ -939,32 +868,17 @@ function App() {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    style={{
-                      marginTop: '24px',
-                      padding: '20px',
-                      background: 'rgba(16, 185, 129, 0.1)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      borderRadius: '12px',
-                    }}
+                    className="mt-6 p-5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl"
                   >
-                    <h4 style={{ color: 'var(--success)', marginBottom: '16px', fontSize: '16px' }}>
+                    <h4 className="text-emerald-400 mb-4 text-base font-semibold">
                       🔑 Save Your Key Shares
                     </h4>
-                    
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+
+                    <div className="mb-4">
+                      <div className="text-xs text-[#8b96a8] mb-1 uppercase tracking-wider">
                         Share 1 (Keep for yourself)
                       </div>
-                      <div style={{
-                        background: 'var(--input-bg)',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        fontFamily: 'monospace',
-                        fontSize: '11px',
-                        wordBreak: 'break-all',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--input-border)',
-                      }}>
+                      <div className="bg-[#0f1e2e] p-3 rounded-lg font-mono text-xs break-all text-[#C0C8D4] border border-[#C0C8D4]/20">
                         {keyShares.shareOne}
                       </div>
                       <button
@@ -973,37 +887,19 @@ function App() {
                           setCopiedShare1(true);
                           setTimeout(() => setCopiedShare1(false), 2000);
                         }}
-                        style={{
-                          marginTop: '8px',
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          background: copiedShare1 ? 'var(--success)' : 'var(--accent-primary)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          transition: 'background 0.2s ease',
-                          minWidth: '100px',
-                        }}
+                        className={`mt-2 px-3 py-1.5 text-xs font-medium text-white rounded transition-all min-w-[100px] ${
+                          copiedShare1 ? 'bg-emerald-500' : 'bg-[#3DA288] hover:bg-[#2d8a6f]'
+                        }`}
                       >
                         {copiedShare1 ? '✓ Copied!' : 'Copy Share 1'}
                       </button>
                     </div>
 
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div className="mb-4">
+                      <div className="text-xs text-[#8b96a8] mb-1 uppercase tracking-wider">
                         Share 2 (Give to beneficiary)
                       </div>
-                      <div style={{
-                        background: 'var(--input-bg)',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        fontFamily: 'monospace',
-                        fontSize: '11px',
-                        wordBreak: 'break-all',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--input-border)',
-                      }}>
+                      <div className="bg-[#0f1e2e] p-3 rounded-lg font-mono text-xs break-all text-[#C0C8D4] border border-[#C0C8D4]/20">
                         {keyShares.shareTwo}
                       </div>
                       <button
@@ -1012,46 +908,24 @@ function App() {
                           setCopiedShare2(true);
                           setTimeout(() => setCopiedShare2(false), 2000);
                         }}
-                        style={{
-                          marginTop: '8px',
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          background: copiedShare2 ? 'var(--success)' : 'var(--accent-primary)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          transition: 'background 0.2s ease',
-                          minWidth: '100px',
-                        }}
+                        className={`mt-2 px-3 py-1.5 text-xs font-medium text-white rounded transition-all min-w-[100px] ${
+                          copiedShare2 ? 'bg-emerald-500' : 'bg-[#3DA288] hover:bg-[#2d8a6f]'
+                        }`}
                       >
                         {copiedShare2 ? '✓ Copied!' : 'Copy Share 2'}
                       </button>
                     </div>
 
-                    <div style={{
-                      padding: '12px',
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      color: 'var(--info)',
-                    }}>
+                    <div className="p-3 bg-blue-500/10 rounded-lg text-sm text-blue-400">
                       <strong>Share 3</strong> is stored on blockchain and embedded in your .enc file. No need to save separately!
                     </div>
 
-                    <div style={{
-                      marginTop: '16px',
-                      padding: '12px',
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      color: 'var(--error)',
-                    }}>
+                    <div className="mt-4 p-3 bg-red-500/10 rounded-lg text-sm text-red-400">
                       ⚠️ <strong>Important:</strong> Save Share 1 and Share 2 securely. You need any 2 of 3 shares to decrypt your file.
                     </div>
 
                     {/* Confirmation Button */}
-                    <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                    <div className="mt-5 text-center">
                       {!sharesSaved ? (
                         <button
                           onClick={() => {
@@ -1065,46 +939,20 @@ function App() {
                               setSharesSaved(true);
                             }
                           }}
-                          style={{
-                            padding: '14px 32px',
-                            fontSize: '15px',
-                            fontWeight: '600',
-                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                          }}
+                          className="px-8 py-3.5 text-base font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg shadow-lg shadow-emerald-500/30 hover:scale-[1.02] transition-all"
                         >
                           ✓ I Have Saved My Key Shares
                         </button>
                       ) : (
-                        <div style={{
-                          padding: '14px 32px',
-                          fontSize: '15px',
-                          fontWeight: '600',
-                          background: 'rgba(16, 185, 129, 0.2)',
-                          color: 'var(--success)',
-                          borderRadius: '8px',
-                          display: 'inline-block',
-                        }}>
+                        <div className="inline-block px-8 py-3.5 text-base font-semibold bg-emerald-500/20 text-emerald-400 rounded-lg">
                           ✓ Shares Saved - You can now encrypt another file
                         </div>
                       )}
                     </div>
 
                     {/* Auto-saved notice */}
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '10px',
-                      background: 'rgba(139, 157, 195, 0.1)',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      color: 'var(--text-muted)',
-                      textAlign: 'center',
-                    }}>
-                      💾 Share 1 has been auto-saved to your browser. File hash: <code style={{ fontSize: '10px' }}>{fileHash.slice(0, 16)}...</code>
+                    <div className="mt-3 p-2.5 bg-[#C0C8D4]/10 rounded-md text-xs text-[#8b96a8] text-center">
+                      💾 Share 1 has been auto-saved to your browser. File hash: <code className="text-[10px]">{fileHash.slice(0, 16)}...</code>
                     </div>
                   </motion.div>
                 )}
@@ -1115,65 +963,49 @@ function App() {
             {appMode === 'decrypt' && (
               <>
                 {/* Mode Toggle: Auto vs Manual */}
-                <div style={{ 
-                  display: 'flex', 
-                  gap: '8px', 
-                  marginBottom: '20px',
-                  background: 'var(--input-bg)',
-                  padding: '4px',
-                  borderRadius: '8px'
-                }}>
+                <div className="flex gap-2 mb-5 bg-[#0f1e2e] p-1 rounded-lg">
                   <button
                     onClick={() => setManualMode(false)}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '13px',
-                      background: !manualMode ? 'var(--accent-primary)' : 'transparent',
-                      color: !manualMode ? 'white' : 'var(--text-secondary)',
-                    }}
+                    className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                      !manualMode
+                        ? 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white'
+                        : 'text-[#8b96a8] hover:text-[#C0C8D4]'
+                    }`}
                   >
                     ⛓️ Auto (1 Share + Blockchain)
                   </button>
                   <button
                     onClick={() => setManualMode(true)}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '13px',
-                      background: manualMode ? 'var(--accent-primary)' : 'transparent',
-                      color: manualMode ? 'white' : 'var(--text-secondary)',
-                    }}
+                    className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                      manualMode
+                        ? 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white'
+                        : 'text-[#8b96a8] hover:text-[#C0C8D4]'
+                    }`}
                   >
                     🔧 Manual (2 Shares)
                   </button>
                 </div>
 
-                <div style={styles.uploadArea}>
+                <div className="mb-6">
                   <input
                     type="file"
                     accept=".enc"
                     onChange={handleEncryptedFileSelect}
-                    style={styles.fileInput}
+                    className="hidden"
                     id="encrypted-file-upload"
                   />
-                  <label htmlFor="encrypted-file-upload" style={styles.uploadLabel}>
+                  <label
+                    htmlFor="encrypted-file-upload"
+                    className="flex flex-col items-center justify-center p-12 bg-[#0f1e2e]/80 border-2 border-dashed border-[#C0C8D4]/30 rounded-xl cursor-pointer hover:border-[#3DA288]/50 transition-all min-h-[200px]"
+                  >
                     <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                      <path d="M24 32V8M24 32L16 24M24 32L32 24" stroke="var(--accent-primary)" strokeWidth="2.5" strokeLinecap="round"/>
-                      <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="var(--accent-secondary)" strokeWidth="2.5" strokeLinecap="round"/>
+                      <path d="M24 32V8M24 32L16 24M24 32L32 24" stroke="#C0C8D4" strokeWidth="2.5" strokeLinecap="round"/>
+                      <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="#3DA288" strokeWidth="2.5" strokeLinecap="round"/>
                     </svg>
-                    <span style={styles.uploadText}>
+                    <span className="text-base font-semibold text-[#C0C8D4] mt-4">
                       {file ? file.name : 'Select encrypted file (.enc)'}
                     </span>
-                    <span style={styles.uploadHint}>
+                    <span className="text-sm text-[#8b96a8] mt-1">
                       Upload the .enc file to decrypt
                     </span>
                   </label>
@@ -1182,26 +1014,23 @@ function App() {
                 {/* AUTO MODE: 1 Share + Blockchain */}
                 {!manualMode && (
                   <>
-                    <div style={styles.inputGroup}>
-                      <label style={styles.label}>Your Key Share (Share 1 or 2)</label>
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-[#8b96a8] mb-2 uppercase tracking-wider">
+                        Your Key Share (Share 1 or 2)
+                      </label>
                       <textarea
                         value={userShare}
                         onChange={(e) => setUserShare(e.target.value)}
                         placeholder="Paste your key share (e.g., 801... or 802...)"
-                        style={{ ...styles.input, minHeight: '70px', fontFamily: 'monospace', fontSize: '12px' }}
+                        className="w-full px-4 py-3 bg-[#0f1e2e]/80 border border-[#C0C8D4]/30 rounded-lg text-[#C0C8D4] placeholder-[#8b96a8]/50 focus:border-[#3DA288] focus:outline-none transition-colors font-mono text-xs min-h-[70px]"
                       />
                     </div>
 
-                    <div style={styles.inputGroup}>
-                      <label style={styles.label}>
+                    <div className="mb-5">
+                      <label className="block text-xs font-semibold text-[#8b96a8] mb-2 uppercase tracking-wider">
                         File Hash (for blockchain lookup)
                         {decryptFileHash && encryptedFile && extractFileHashFromEncFile(encryptedFile) && (
-                          <span style={{ 
-                            marginLeft: '8px', 
-                            fontSize: '11px', 
-                            color: 'var(--success)',
-                            fontWeight: '400',
-                          }}>
+                          <span className="ml-2 text-emerald-400 font-normal">
                             ✓ Auto-detected
                           </span>
                         )}
@@ -1211,18 +1040,15 @@ function App() {
                         value={decryptFileHash}
                         onChange={(e) => setDecryptFileHash(e.target.value)}
                         placeholder="0x... (auto-detected from file)"
-                        style={{ 
-                          ...styles.input, 
-                          fontFamily: 'monospace', 
-                          fontSize: '12px',
-                          background: decryptFileHash && encryptedFile && extractFileHashFromEncFile(encryptedFile) 
-                            ? 'rgba(16, 185, 129, 0.1)' 
-                            : 'var(--input-bg)',
-                        }}
+                        className={`w-full px-4 py-3 border rounded-lg text-[#C0C8D4] placeholder-[#8b96a8]/50 focus:border-[#3DA288] focus:outline-none transition-colors font-mono text-xs ${
+                          decryptFileHash && encryptedFile && extractFileHashFromEncFile(encryptedFile)
+                            ? 'bg-emerald-500/10 border-emerald-500/30'
+                            : 'bg-[#0f1e2e]/80 border-[#C0C8D4]/30'
+                        }`}
                         readOnly={!!(decryptFileHash && encryptedFile && extractFileHashFromEncFile(encryptedFile))}
                       />
-                      <span style={styles.hint}>
-                        {encryptedFile && extractFileHashFromEncFile(encryptedFile) 
+                      <span className="block text-xs text-[#8b96a8]/70 mt-1">
+                        {encryptedFile && extractFileHashFromEncFile(encryptedFile)
                           ? '✨ File hash was embedded in the .enc file and auto-detected!'
                           : 'For older files without embedded hash, enter manually.'}
                       </span>
@@ -1233,15 +1059,9 @@ function App() {
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        style={{
-                          marginBottom: '20px',
-                          padding: '16px',
-                          background: 'var(--input-bg)',
-                          borderRadius: '12px',
-                          border: '1px solid var(--input-border)',
-                        }}
+                        className="mb-5 p-4 bg-[#0f1e2e] rounded-xl border border-[#C0C8D4]/20"
                       >
-                        <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: 'var(--text-primary)' }}>
+                        <div className="text-sm font-semibold text-[#C0C8D4] mb-3">
                           Decryption Progress
                         </div>
                         {[
@@ -1252,34 +1072,18 @@ function App() {
                         ].map(({ step, label, icon }) => (
                           <div
                             key={step}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '12px',
-                              padding: '8px 0',
-                              opacity: decryptStep >= step ? 1 : 0.4,
-                            }}
+                            className={`flex items-center gap-3 py-2 ${decryptStep >= step ? 'opacity-100' : 'opacity-40'}`}
                           >
-                            <div style={{
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '50%',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '14px',
-                              background: decryptStep > step ? 'var(--success)' : 
-                                         decryptStep === step ? 'var(--accent-primary)' : 
-                                         'var(--card-border)',
-                              color: decryptStep >= step ? 'white' : 'var(--text-muted)',
-                            }}>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm ${
+                              decryptStep > step ? 'bg-emerald-500 text-white' :
+                              decryptStep === step ? 'bg-[#3DA288] text-white' :
+                              'bg-[#C0C8D4]/20 text-[#8b96a8]'
+                            }`}>
                               {decryptStep > step ? '✓' : icon}
                             </div>
-                            <span style={{ 
-                              fontSize: '13px',
-                              color: decryptStep >= step ? 'var(--text-primary)' : 'var(--text-muted)',
-                              fontWeight: decryptStep === step ? '600' : '400',
-                            }}>
+                            <span className={`text-sm ${
+                              decryptStep >= step ? 'text-[#C0C8D4]' : 'text-[#8b96a8]'
+                            } ${decryptStep === step ? 'font-semibold' : ''}`}>
                               {label}
                               {decryptStep === step && loading && '...'}
                             </span>
@@ -1293,43 +1097,19 @@ function App() {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        style={{
-                          marginBottom: '20px',
-                          padding: '16px',
-                          background: 'rgba(16, 185, 129, 0.1)',
-                          border: '1px solid rgba(16, 185, 129, 0.3)',
-                          borderRadius: '12px',
-                        }}
+                        className="mb-5 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl"
                       >
-                        <div style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '8px',
-                          marginBottom: '12px',
-                        }}>
-                          <span style={{ fontSize: '20px' }}>⛓️</span>
-                          <span style={{ 
-                            fontSize: '14px', 
-                            fontWeight: '600', 
-                            color: 'var(--success)' 
-                          }}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl">⛓️</span>
+                          <span className="text-sm font-semibold text-emerald-400">
                             Share 3 Retrieved from Blockchain!
                           </span>
                         </div>
-                        <div style={{
-                          background: 'var(--input-bg)',
-                          padding: '10px',
-                          borderRadius: '6px',
-                          fontFamily: 'monospace',
-                          fontSize: '10px',
-                          wordBreak: 'break-all',
-                          color: 'var(--text-primary)',
-                          marginBottom: '8px',
-                        }}>
+                        <div className="bg-[#0f1e2e] p-2.5 rounded-md font-mono text-[10px] break-all text-[#C0C8D4] mb-2">
                           {blockchainShare3.slice(0, 40)}...{blockchainShare3.slice(-20)}
                         </div>
                         {share3Info && (
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          <div className="text-xs text-[#8b96a8]">
                             📦 Block #{share3Info.blockNumber}
                             {share3Info.timestamp && (
                               <> · 🕐 {new Date(share3Info.timestamp * 1000).toLocaleString()}</>
@@ -1343,14 +1123,13 @@ function App() {
                     <button
                       onClick={handleDecryptAuto}
                       disabled={loading || !encryptedFile || !userShare || !decryptFileHash}
-                      style={{
-                        ...styles.actionButton,
-                        ...styles.primaryAction,
-                        width: '100%',
-                        ...(loading || !encryptedFile || !userShare || !decryptFileHash ? styles.disabledButton : {})
-                      }}
+                      className={`w-full flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white transition-all ${
+                        loading || !encryptedFile || !userShare || !decryptFileHash
+                          ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] hover:shadow-lg hover:shadow-[#3DA288]/30 hover:scale-[1.02]'
+                      }`}
                     >
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="mr-2">
                         <rect x="5" y="9" width="10" height="8" rx="1" stroke="white" strokeWidth="1.5" fill="none"/>
                         <path d="M7 9V6C7 4.34315 8.34315 3 10 3V3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5" strokeDasharray="2 2"/>
                         <circle cx="10" cy="13" r="1" fill="white"/>
@@ -1363,25 +1142,29 @@ function App() {
                 {/* MANUAL MODE: 2 Shares */}
                 {manualMode && (
                   <>
-                    <div style={styles.inputGroup}>
-                      <label style={styles.label}>Key Share A</label>
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-[#8b96a8] mb-2 uppercase tracking-wider">
+                        Key Share A
+                      </label>
                       <textarea
                         value={shareA}
                         onChange={(e) => setShareA(e.target.value)}
                         placeholder="Paste first key share (e.g., 801...)"
-                        style={{ ...styles.input, minHeight: '70px', fontFamily: 'monospace', fontSize: '12px' }}
+                        className="w-full px-4 py-3 bg-[#0f1e2e]/80 border border-[#C0C8D4]/30 rounded-lg text-[#C0C8D4] placeholder-[#8b96a8]/50 focus:border-[#3DA288] focus:outline-none transition-colors font-mono text-xs min-h-[70px]"
                       />
                     </div>
 
-                    <div style={styles.inputGroup}>
-                      <label style={styles.label}>Key Share B</label>
+                    <div className="mb-5">
+                      <label className="block text-xs font-semibold text-[#8b96a8] mb-2 uppercase tracking-wider">
+                        Key Share B
+                      </label>
                       <textarea
                         value={shareB}
                         onChange={(e) => setShareB(e.target.value)}
                         placeholder="Paste second key share (e.g., 802...)"
-                        style={{ ...styles.input, minHeight: '70px', fontFamily: 'monospace', fontSize: '12px' }}
+                        className="w-full px-4 py-3 bg-[#0f1e2e]/80 border border-[#C0C8D4]/30 rounded-lg text-[#C0C8D4] placeholder-[#8b96a8]/50 focus:border-[#3DA288] focus:outline-none transition-colors font-mono text-xs min-h-[70px]"
                       />
-                      <span style={styles.hint}>
+                      <span className="block text-xs text-[#8b96a8]/70 mt-1">
                         Enter any 2 of your 3 key shares to decrypt (no blockchain needed)
                       </span>
                     </div>
@@ -1390,14 +1173,13 @@ function App() {
                     <button
                       onClick={handleDecryptManual}
                       disabled={loading || !encryptedFile || !shareA || !shareB}
-                      style={{
-                        ...styles.actionButton,
-                        ...styles.primaryAction,
-                        width: '100%',
-                        ...(loading || !encryptedFile || !shareA || !shareB ? styles.disabledButton : {})
-                      }}
+                      className={`w-full flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white transition-all ${
+                        loading || !encryptedFile || !shareA || !shareB
+                          ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] hover:shadow-lg hover:shadow-[#3DA288]/30 hover:scale-[1.02]'
+                      }`}
                     >
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: '8px' }}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="mr-2">
                         <rect x="5" y="9" width="10" height="8" rx="1" stroke="white" strokeWidth="1.5" fill="none"/>
                         <path d="M7 9V6C7 4.34315 8.34315 3 10 3V3C11.6569 3 13 4.34315 13 6V9" stroke="white" strokeWidth="1.5" strokeDasharray="2 2"/>
                         <circle cx="10" cy="13" r="1" fill="white"/>
@@ -1414,32 +1196,31 @@ function App() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                style={{
-                  ...styles.statusBox,
-                  ...(status.type === "success" ? styles.statusSuccess :
-                      status.type === "error" ? styles.statusError :
-                      styles.statusInfo)
-                }}
+                className={`mt-4 p-4 rounded-xl flex items-center gap-3 ${
+                  status.type === "success" ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400" :
+                  status.type === "error" ? "bg-red-500/10 border border-red-500/30 text-red-400" :
+                  "bg-blue-500/10 border border-blue-500/30 text-blue-400"
+                }`}
               >
                 {status.type === "success" && (
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="8" stroke="var(--success)" strokeWidth="1.5" fill="none"/>
-                    <path d="M6 10L9 13L14 7" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round"/>
+                    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                    <path d="M6 10L9 13L14 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 )}
                 {status.type === "error" && (
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="8" stroke="var(--error)" strokeWidth="1.5" fill="none"/>
-                    <path d="M7 7L13 13M13 7L7 13" stroke="var(--error)" strokeWidth="1.5" strokeLinecap="round"/>
+                    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                    <path d="M7 7L13 13M13 7L7 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 )}
                 {status.type === "info" && (
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="8" stroke="var(--info)" strokeWidth="1.5" fill="none"/>
-                    <path d="M10 10V14M10 6V7" stroke="var(--info)" strokeWidth="1.5" strokeLinecap="round"/>
+                    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                    <path d="M10 10V14M10 6V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 )}
-                <span>{status.message}</span>
+                <span className="text-sm">{status.message}</span>
               </motion.div>
             )}
 
@@ -1448,26 +1229,26 @@ function App() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                style={styles.txInfo}
+                className="mt-4 p-4 bg-[#0f1e2e] border border-[#C0C8D4]/20 rounded-xl"
               >
-                <div style={styles.txRow}>
-                  <span style={styles.txLabel}>Transaction Hash:</span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-[#8b96a8] uppercase tracking-wider">Transaction Hash:</span>
                   <a
                     href={`${EXPLORER_URL}/tx/${txHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={styles.txLink}
+                    className="text-sm text-[#3DA288] hover:text-[#2d8a6f] flex items-center font-mono"
                   >
                     {txHash.slice(0, 10)}...{txHash.slice(-8)}
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginLeft: '4px' }}>
-                      <path d="M10 3H13V6M13 3L8 8M6 3H4C3.44772 3 3 3.44772 3 4V12C3 12.5523 3.44772 13 4 13H12C12.5523 13 13 12.5523 13 12V10" stroke="var(--accent-primary)" strokeWidth="1.5" strokeLinecap="round"/>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="ml-1">
+                      <path d="M10 3H13V6M13 3L8 8M6 3H4C3.44772 3 3 3.44772 3 4V12C3 12.5523 3.44772 13 4 13H12C12.5523 13 13 12.5523 13 12V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                     </svg>
                   </a>
                 </div>
                 {fileHash && (
-                  <div style={styles.txRow}>
-                    <span style={styles.txLabel}>File Hash:</span>
-                    <code style={styles.hashCode}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[#8b96a8] uppercase tracking-wider">File Hash:</span>
+                    <code className="text-xs text-[#C0C8D4] font-mono">
                       {fileHash.slice(0, 16)}...{fileHash.slice(-16)}
                     </code>
                   </div>
@@ -1481,21 +1262,21 @@ function App() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          style={styles.primaryPanel}
+          className="mt-6"
         >
-          <div style={{ ...styles.card, ...styles.infoCard }}>
-            <h4 style={styles.infoCardTitle}>
+          <div className="bg-gradient-to-br from-[#1a2942] to-[#0a1628] border border-[#C0C8D4]/10 rounded-2xl p-6">
+            <h4 className="text-sm font-semibold text-[#3DA288] mb-4 uppercase tracking-wider">
               {appMode === 'encrypt' ? 'How 2-of-3 Encryption Works' : 'How to Decrypt'}
             </h4>
-            <ol style={styles.infoList}>
+            <ol className="text-sm text-[#8b96a8] leading-relaxed pl-5 space-y-2 list-decimal">
               {appMode === 'encrypt' ? (
                 <>
                   <li>Select any file you want to secure</li>
                   <li>Click "Encrypt & Register" - a random key encrypts your file</li>
                   <li>The key is split into 3 shares (2-of-3 threshold)</li>
-                  <li><strong>Share 1:</strong> Keep for yourself</li>
-                  <li><strong>Share 2:</strong> Give to your beneficiary</li>
-                  <li><strong>Share 3:</strong> Stored on blockchain</li>
+                  <li><strong className="text-[#C0C8D4]">Share 1:</strong> Keep for yourself</li>
+                  <li><strong className="text-[#C0C8D4]">Share 2:</strong> Give to your beneficiary</li>
+                  <li><strong className="text-[#C0C8D4]">Share 3:</strong> Stored on blockchain</li>
                   <li>Any 2 shares can decrypt the file</li>
                 </>
               ) : (
@@ -1512,22 +1293,19 @@ function App() {
       </div>
 
       {/* Footer */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        style={styles.footer}
-      >
-        <p style={styles.footerText}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginRight: '6px' }}>
-            <path d="M8 2L3 5V8C3 11 5 13.5 8 15C11 13.5 13 11 13 8V5L8 2Z" stroke="var(--text-muted)" strokeWidth="1.2" fill="none"/>
-          </svg>
-          EternLink · Blockchain-Based Proof of Existence System
-        </p>
-        <p style={styles.footerCopy}>
-          Secured with AES-256-GCM Encryption · Multi-Network Support
-        </p>
-      </motion.footer>
+      <footer className="border-t border-[#C0C8D4]/10 py-8 mt-12">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-[#8b96a8] text-sm flex items-center justify-center mb-2">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="mr-2">
+              <path d="M8 2L3 5V8C3 11 5 13.5 8 15C11 13.5 13 11 13 8V5L8 2Z" stroke="#3DA288" strokeWidth="1.2" fill="none"/>
+            </svg>
+            EternLink · Blockchain-Based Proof of Existence System
+          </p>
+          <p className="text-[#8b96a8]/60 text-xs">
+            Secured with AES-256-GCM Encryption · Multi-Network Support
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

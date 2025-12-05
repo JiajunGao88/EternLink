@@ -37,6 +37,17 @@ export default function LoginPage({ onLoginSuccess, onBackToHome, onRegisterClic
         throw new Error(data.error || 'Login failed');
       }
 
+      // Check for 2FA requirement
+      if (data.requires2FA) {
+        // TODO: Implement 2FA verification UI
+        throw new Error('2FA is enabled but not yet supported in the UI. Please contact support.');
+      }
+
+      // Validate that we have token and user
+      if (!data.token || !data.user) {
+        throw new Error('Invalid server response. Please try again.');
+      }
+
       onLoginSuccess(data.token, data.user);
     } catch (err: any) {
       setError(err.message || 'Failed to login');

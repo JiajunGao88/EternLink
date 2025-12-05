@@ -46,6 +46,13 @@ export const PhoneVerificationStep: React.FC<PhoneVerificationStepProps> = ({
           },
         });
 
+        // Handle expired/invalid token
+        if (response.status === 401) {
+          console.warn('Token expired or invalid');
+          setIsLoading(false);
+          return;
+        }
+
         if (response.ok) {
           const data = await response.json();
           if (data.user?.phoneVerified && data.user?.phoneNumber) {

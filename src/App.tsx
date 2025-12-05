@@ -404,6 +404,10 @@ function App() {
       type: "info",
       message: `File selected: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(2)} KB)`,
     });
+    // Reset copied states when new file is selected
+    setCopiedShare1(false);
+    setCopiedShare2(false);
+    setSharesSaved(false);
     // Reset shares when new file selected
     setKeyShares(null);
     setShowShares(false);
@@ -617,14 +621,15 @@ function App() {
       const { iv, encrypted } = unpackEncryptedFileSSS(encryptedFile);
       const decrypted = await decryptFileWithKey(encrypted, iv, reconstructedKey);
 
-      // Download decrypted file
-      const originalName = file?.name.replace('.enc', '') || 'decrypted_file';
-      const blob = new Blob([decrypted], { type: 'application/octet-stream' });
+      // Download decrypted file with original name and mime type
+      const originalName = selectedServerFile?.originalName || file?.name.replace('.enc', '') || 'decrypted_file';
+      const mimeType = selectedServerFile?.mimeType || 'application/octet-stream';
+      const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
 
       setStatus({
         type: "success",
-        message: "File decrypted successfully!",
+        message: `File decrypted successfully! Downloaded as: ${originalName}`,
       });
     } catch (error: any) {
       console.error(error);
@@ -671,14 +676,15 @@ function App() {
       setStatus({ type: "info", message: "Decrypting..." });
       const decrypted = await decryptFileWithKey(encrypted, iv, reconstructedKey);
 
-      // 5. Download decrypted file
-      const originalName = file?.name.replace('.enc', '') || 'decrypted_file';
-      const blob = new Blob([decrypted], { type: 'application/octet-stream' });
+      // 5. Download decrypted file with original name and mime type
+      const originalName = selectedServerFile?.originalName || file?.name.replace('.enc', '') || 'decrypted_file';
+      const mimeType = selectedServerFile?.mimeType || 'application/octet-stream';
+      const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
 
       setStatus({
         type: "success",
-        message: "File decrypted successfully!",
+        message: `File decrypted successfully! Downloaded as: ${originalName}`,
       });
     } catch (error: any) {
       console.error(error);
@@ -819,7 +825,18 @@ function App() {
       <div className="flex justify-center mb-6">
         <div className="flex bg-[#1a2942]/60 backdrop-blur-md rounded-xl p-1 border border-[#C0C8D4]/20">
           <button
-            onClick={() => { setAppMode('encrypt'); setFile(null); setFileInfo(null); setEncryptedFile(null); setStatus(null); setKeyShares(null); setShowShares(false); }}
+            onClick={() => { 
+              setAppMode('encrypt'); 
+              setFile(null); 
+              setFileInfo(null); 
+              setEncryptedFile(null); 
+              setStatus(null); 
+              setKeyShares(null); 
+              setShowShares(false); 
+              setCopiedShare1(false); 
+              setCopiedShare2(false);
+              setSharesSaved(false);
+            }}
             className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all ${
               appMode === 'encrypt'
                 ? 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white shadow-lg shadow-[#3DA288]/30'
@@ -829,7 +846,21 @@ function App() {
             🔒 Encrypt & Register
           </button>
           <button
-            onClick={() => { setAppMode('decrypt'); setFile(null); setFileInfo(null); setEncryptedFile(null); setStatus(null); setShareA(''); setShareB(''); }}
+            onClick={() => { 
+              setAppMode('decrypt'); 
+              setFile(null); 
+              setFileInfo(null); 
+              setEncryptedFile(null); 
+              setStatus(null); 
+              setShareA(''); 
+              setShareB(''); 
+              setUserShare('');
+              setDecryptFileHash('');
+              setSelectedServerFile(null);
+              setBlockchainShare3(null);
+              setDecryptStep(0);
+              setShare3Info(null);
+            }}
             className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all ${
               appMode === 'decrypt'
                 ? 'bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white shadow-lg shadow-[#3DA288]/30'

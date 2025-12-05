@@ -130,29 +130,35 @@ export const VoiceSignatureStep: React.FC<VoiceSignatureStepProps> = ({ onSaved 
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
       reader.onloadend = async () => {
-        const base64Audio = reader.result as string;
+        try {
+          const base64Audio = reader.result as string;
 
-        const token = localStorage.getItem('authToken');
-        const response = await fetch('http://localhost:3001/api/account/voice/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ voiceData: base64Audio }),
-        });
+          const token = localStorage.getItem('authToken');
+          const response = await fetch('http://localhost:3001/api/account/voice/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ voiceData: base64Audio }),
+          });
 
-        const data = await response.json();
+          const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to save voice signature');
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to save voice signature');
+          }
+
+          // Successfully saved - reset saving state and call onSaved callback
+          setIsSaving(false);
+          onSaved(base64Audio);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to save recording');
+          setIsSaving(false);
         }
-
-        onSaved(base64Audio);
       };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save recording');
-    } finally {
       setIsSaving(false);
     }
   };

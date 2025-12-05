@@ -4,7 +4,7 @@
  * Configure multi-level notification thresholds for heartbeat monitoring.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 interface NotificationStepProps {
@@ -42,6 +42,13 @@ export const NotificationStep: React.FC<NotificationStepProps> = ({ onSave, init
   );
   const [selectedPreset, setSelectedPreset] = useState<number>(1);
   const [showCustom, setShowCustom] = useState(false);
+
+  // Save default configuration on mount
+  useEffect(() => {
+    if (!initialConfig) {
+      onSave(PRESETS[1].config);
+    }
+  }, []);
 
   const handlePresetSelect = (index: number) => {
     setSelectedPreset(index);

@@ -101,7 +101,7 @@ export const PlanSelection: React.FC<PlanSelectionProps> = ({ onPlanSelected, on
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               className={`
-                relative p-8 rounded-2xl border-2 transition-all
+                relative p-8 rounded-2xl border-2 transition-all flex flex-col
                 ${selectedPlan === plan.id
                   ? 'border-[#10b981] bg-[#10b981]/10 shadow-2xl shadow-[#10b981]/30'
                   : plan.recommended
@@ -119,33 +119,39 @@ export const PlanSelection: React.FC<PlanSelectionProps> = ({ onPlanSelected, on
                 </div>
               )}
 
-              {/* Plan Header */}
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                <div className="flex items-baseline justify-center gap-2">
-                  <span className="text-4xl font-bold text-[#C0C8D4]">{plan.price}</span>
-                  <span className="text-gray-400">{plan.period}</span>
+              {/* Plan Icon */}
+              <div className="flex justify-center mb-6">
+                <div className="p-3 rounded-lg bg-white/5">
+                  {plan.id === 'individual' ? (
+                    <svg className="w-10 h-10 text-[#C0C8D4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-10 h-10 text-[#C0C8D4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  )}
                 </div>
               </div>
 
-              {/* Features */}
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3 text-gray-300">
-                    <svg className="w-5 h-5 text-[#10b981] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
+              {/* Plan Header */}
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  {plan.id === 'individual' ? 'Secure your digital legacy' : 'Protect your whole family'}
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-white">{plan.price}</span>
+                  <span className="text-gray-400">{plan.period}</span>
+                </div>
+              </div>
 
               {/* Select Button */}
               <button
                 onClick={() => handleSelectPlan(plan.id)}
                 disabled={isProcessing && selectedPlan !== plan.id}
                 className={`
-                  w-full py-3 rounded-lg font-semibold transition-all
+                  w-full py-3 rounded-lg font-semibold transition-all mb-6
                   ${selectedPlan === plan.id
                     ? 'bg-[#10b981] hover:bg-[#059669] text-white'
                     : plan.recommended
@@ -175,6 +181,23 @@ export const PlanSelection: React.FC<PlanSelectionProps> = ({ onPlanSelected, on
                   `Choose ${plan.name}`
                 )}
               </button>
+
+              {/* Features List */}
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-400 mb-4">
+                  {plan.id === 'individual' ? 'Everything you need:' : 'Everything in Individual, plus:'}
+                </p>
+                <ul className="space-y-3">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3 text-gray-300 text-sm">
+                      <svg className="w-4 h-4 text-[#10b981] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </motion.div>
           ))}
         </div>

@@ -93,7 +93,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
         throw new Error(data.error || 'Failed to fetch user data');
       }
 
-      setUserData(data);
+      setUserData(data.user);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch user data');
     } finally {

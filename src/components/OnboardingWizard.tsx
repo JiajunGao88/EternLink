@@ -19,6 +19,7 @@ import { BeneficiaryStep } from './onboarding/BeneficiaryStep';
 interface OnboardingWizardProps {
   onComplete: () => void;
   onSkip?: () => void;
+  onLogout?: () => void;
   userEmail?: string;
   userName?: string;
 }
@@ -32,6 +33,7 @@ interface OnboardingData {
 
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   userName,
+  onLogout,
   // onComplete and onSkip are intentionally not destructured as we use window.location.reload() instead
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -178,24 +180,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       title: 'Phone',
       description: 'Verify number',
       component: <PhoneVerificationStep onVerified={handlePhoneVerified} />,
-      validate: () => {
-        if (!onboardingData.phoneNumber) {
-          throw new Error('Please verify your phone number before continuing');
-        }
-        return true;
-      },
+      allowStepSkip: true, // Optional - can skip phone verification
     },
     {
       id: 'voice',
       title: 'Voice',
       description: 'Record signature',
       component: <VoiceSignatureStep onSaved={handleVoiceSaved} />,
-      validate: () => {
-        if (!onboardingData.voiceSignature) {
-          throw new Error('Please record your voice signature before continuing');
-        }
-        return true;
-      },
+      allowStepSkip: true, // Optional - can skip voice signature
     },
     {
       id: 'beneficiaries',
@@ -211,20 +203,58 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     },
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('accountType');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('onboardingCompleted');
+    if (onLogout) {
+      onLogout();
+    } else {
+      window.location.href = '/';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a1628] via-[#1a2942] to-[#0a1628] py-12">
+      {/* Top bar with logout */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/90 backdrop-blur-md border-b border-[#C0C8D4]/10">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+              <path d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z" stroke="#C0C8D4" strokeWidth="2" fill="none"/>
+              <path d="M12 24H18L21 18L24 30L27 20L30 24H36" stroke="#3DA288" strokeWidth="2" fill="none"/>
+            </svg>
+            <span className="text-xl font-bold text-[#C0C8D4]">EternLink</span>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 text-sm text-[#8b96a8] hover:text-red-400 transition-colors flex items-center gap-2"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+            </svg>
+            Exit & Logout
+          </button>
+        </div>
+      </div>
+      
+      {/* Spacer for fixed header */}
+      <div className="h-16"></div>
+      
       <WizardContainer
         steps={wizardSteps}
         currentStep={currentStep}
         onStepChange={setCurrentStep}
         onComplete={handleComplete}
         onSkip={handleSkip}
-        allowSkip={false}
+        allowSkip={true}
         showProgress={true}
         completeButtonText="Complete Setup & Go to Dashboard"
         nextButtonText="Continue"
         backButtonText="Back"
-        skipButtonText="Skip for now"
+        skipButtonText="Skip & Complete Later"
       />
     </div>
   );

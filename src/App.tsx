@@ -215,8 +215,8 @@ function App() {
           if (accountType === 'beneficiary') {
             setShowBeneficiaryDashboard(true);
           } else {
-            // For user accounts, show user dashboard (will show frozen state if no subscription)
-            setShowUserDashboard(true);
+            // For user accounts, start onboarding process
+            setShowOnboarding(true);
           }
         }}
         onBackToHome={() => {
@@ -259,9 +259,22 @@ function App() {
           setShowUserDashboard(true);
         }}
         onSkip={() => {
-          // User chose to skip plan - go to frozen dashboard
+          // User chose to skip - go to dashboard
           setShowOnboarding(false);
           setShowUserDashboard(true);
+        }}
+        onLogout={() => {
+          // Clear all auth data
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('accountType');
+          localStorage.removeItem('userEmail');
+          localStorage.removeItem('userName');
+          localStorage.removeItem('onboardingCompleted');
+          setUserAccountType(null);
+          setUserEmail('');
+          setUserName('');
+          setShowOnboarding(false);
+          setShowProductLanding(true);
         }}
         userEmail={userEmail}
         userName={userName}

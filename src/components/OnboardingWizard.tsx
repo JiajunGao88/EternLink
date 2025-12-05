@@ -15,6 +15,7 @@ import { BeneficiaryStep } from './onboarding/BeneficiaryStep';
 
 interface OnboardingWizardProps {
   onComplete: () => void;
+  onSkip?: () => void;
   userEmail?: string;
   userName?: string;
 }
@@ -28,6 +29,7 @@ interface OnboardingData {
 
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   onComplete,
+  onSkip,
   userName,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -49,39 +51,102 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     setOnboardingData((prev) => ({ ...prev, beneficiaries }));
   };
 
+  const handleBeneficiariesChange = (beneficiaries: any[]) => {
+    setOnboardingData((prev) => ({ ...prev, beneficiaries }));
+  };
+
   const handleComplete = async () => {
     try {
-      // Mark onboarding as complete in localStorage first
-      localStorage.setItem('onboardingCompleted', 'true');
-
-      // Try to save onboarding data to backend (optional)
       const token = localStorage.getItem('authToken');
       if (token) {
         try {
-          await fetch('http://localhost:3001/api/account/complete-onboarding', {
+          // Save onboarding data to backend
+          const response = await fetch('http://localhost:3001/api/account/complete-onboarding', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-              onboardingCompleted: true,
-              ...onboardingData,
+              notificationConfig: onboardingData.notificationConfig,
             }),
           });
-        } catch (apiError) {
-          // Backend endpoint might not exist yet - that's okay
-          console.warn('Could not save onboarding data to backend:', apiError);
-        }
-      }
 
-      // Redirect to dashboard
-      onComplete();
+          if (!response.ok) {
+            const error = await response.json();
+            console.error('Failed to complete onboarding:', error);
+            throw new Error(error.error || 'Failed to complete onboarding');
+          }
+
+          // Mark onboarding as complete in localStorage after successful backend save
+          localStorage.setItem('onboardingCompleted', 'true');
+
+          console.log('Onboarding completed successfully');
+
+          // Force a page reload to refresh all user data and remove cached state
+          window.location.reload();
+          return;
+        } catch (apiError) {
+          console.error('Error completing onboarding:', apiError);
+          // Don't proceed if backend save failed - user needs subscription activated
+          alert('Failed to complete onboarding. Please try again.');
+          return;
+        }
+      } else {
+        console.error('No auth token found');
+        alert('Authentication error. Please log in again.');
+        return;
+      }
     } catch (error) {
       console.error('Onboarding completion error:', error);
-      // Still proceed to dashboard
-      localStorage.setItem('onboardingCompleted', 'true');
-      onComplete();
+      alert('An unexpected error occurred. Please try again.');
+    }
+  };
+
+  const handleSkip = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          // Save onboarding data to backend (same as complete)
+          const response = await fetch('http://localhost:3001/api/account/complete-onboarding', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              notificationConfig: onboardingData.notificationConfig,
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            console.error('Failed to complete onboarding:', error);
+            throw new Error(error.error || 'Failed to complete onboarding');
+          }
+
+          // Mark onboarding as complete in localStorage after successful backend save
+          localStorage.setItem('onboardingCompleted', 'true');
+
+          console.log('Onboarding skipped and completed successfully');
+
+          // Force a page reload to refresh all user data and remove cached state
+          window.location.reload();
+          return;
+        } catch (apiError) {
+          console.error('Error completing onboarding:', apiError);
+          alert('Failed to complete onboarding. Please try again.');
+          return;
+        }
+      } else {
+        console.error('No auth token found');
+        alert('Authentication error. Please log in again.');
+        return;
+      }
+    } catch (error) {
+      console.error('Onboarding skip error:', error);
+      alert('An unexpected error occurred. Please try again.');
     }
   };
 
@@ -134,13 +199,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       id: 'beneficiaries',
       title: 'Beneficiaries',
       description: 'Add contacts',
-      component: <BeneficiaryStep onComplete={handleBeneficiariesComplete} />,
-      validate: () => {
-        if (!onboardingData.beneficiaries || onboardingData.beneficiaries.length === 0) {
-          throw new Error('Please add at least one beneficiary before completing setup');
-        }
-        return true;
-      },
+      component: (
+        <BeneficiaryStep
+          onComplete={handleBeneficiariesComplete}
+          onChange={handleBeneficiariesChange}
+        />
+      ),
+      allowStepSkip: true, // Allow skipping this step
     },
   ];
 
@@ -151,11 +216,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         currentStep={currentStep}
         onStepChange={setCurrentStep}
         onComplete={handleComplete}
+        onSkip={handleSkip}
         allowSkip={false}
         showProgress={true}
         completeButtonText="Complete Setup & Go to Dashboard"
         nextButtonText="Continue"
         backButtonText="Back"
+        skipButtonText="Skip for now"
       />
     </div>
   );

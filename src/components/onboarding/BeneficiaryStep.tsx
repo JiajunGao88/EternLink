@@ -16,9 +16,10 @@ interface Beneficiary {
 
 interface BeneficiaryStepProps {
   onComplete: (beneficiaries: Beneficiary[]) => void;
+  onChange?: (beneficiaries: Beneficiary[]) => void;
 }
 
-export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onComplete }) => {
+export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onComplete, onChange }) => {
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -28,6 +29,43 @@ export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onComplete }) 
     relationship: 'family',
   });
   const [error, setError] = useState<string | null>(null);
+
+  const sendInvitationEmail = async (beneficiary: Beneficiary, referCode: string) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const inviterEmail = localStorage.getItem('userEmail') || 'your inviter';
+      const inviterName = localStorage.getItem('userName') || 'EternLink User';
+
+      // Base URL for registration
+      const registrationUrl = `${window.location.origin}/beneficiary-register?code=${referCode}`;
+
+      const response = await fetch('http://localhost:3001/api/beneficiary/send-invitation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          beneficiaryEmail: beneficiary.email,
+          beneficiaryName: beneficiary.name,
+          inviterName: inviterName,
+          inviterEmail: inviterEmail,
+          referCode: referCode,
+          registrationUrl: registrationUrl,
+          relationship: beneficiary.relationship,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.warn('Failed to send invitation email:', data.error);
+        // Don't throw error - email is optional
+      }
+    } catch (err) {
+      console.warn('Failed to send invitation email:', err);
+      // Don't throw error - email is optional
+    }
+  };
 
   const generateReferCode = async (beneficiary: Beneficiary) => {
     setIsGenerating(true);
@@ -53,6 +91,9 @@ export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onComplete }) 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to generate refer code');
       }
+
+      // Send invitation email with the generated refer code
+      await sendInvitationEmail(beneficiary, data.referCode);
 
       return data.referCode;
     } catch (err) {
@@ -84,21 +125,30 @@ export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onComplete }) 
       referCode,
     };
 
-    setBeneficiaries([...beneficiaries, newBeneficiary]);
+    const updatedBeneficiaries = [...beneficiaries, newBeneficiary];
+    setBeneficiaries(updatedBeneficiaries);
     setFormData({ name: '', email: '', relationship: 'family' });
     setShowAddForm(false);
     setError(null);
+
+    // Notify parent of change
+    if (onChange) {
+      onChange(updatedBeneficiaries);
+    }
   };
 
   const handleRemoveBeneficiary = (index: number) => {
-    setBeneficiaries(beneficiaries.filter((_, i) => i !== index));
+    const updatedBeneficiaries = beneficiaries.filter((_, i) => i !== index);
+    setBeneficiaries(updatedBeneficiaries);
+
+    // Notify parent of change
+    if (onChange) {
+      onChange(updatedBeneficiaries);
+    }
   };
 
   const handleComplete = () => {
-    if (beneficiaries.length === 0) {
-      setError('Please add at least one beneficiary');
-      return;
-    }
+    // Allow completing without beneficiaries
     onComplete(beneficiaries);
   };
 
@@ -313,24 +363,6 @@ export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onComplete }) 
         </div>
       </div>
 
-      {/* Complete Setup Button */}
-      {beneficiaries.length > 0 && !showAddForm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-8 text-center"
-        >
-          <button
-            onClick={handleComplete}
-            className="px-8 py-3 rounded-lg bg-gradient-to-r from-[#10b981] to-[#059669] hover:opacity-90 transition-opacity text-white font-semibold"
-          >
-            Complete Setup
-          </button>
-          <p className="text-sm text-gray-400 mt-3">
-            You've added {beneficiaries.length} beneficiar{beneficiaries.length === 1 ? 'y' : 'ies'}
-          </p>
-        </motion.div>
-      )}
     </div>
   );
 };

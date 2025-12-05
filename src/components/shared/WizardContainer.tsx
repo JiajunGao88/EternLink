@@ -17,6 +17,7 @@ export interface WizardStep {
   validate?: () => Promise<boolean> | boolean;
   onEnter?: () => void;
   onExit?: () => void;
+  allowStepSkip?: boolean; // Allow skipping this specific step
 }
 
 interface WizardContainerProps {
@@ -24,6 +25,7 @@ interface WizardContainerProps {
   currentStep: number;
   onStepChange: (step: number) => void;
   onComplete: () => void;
+  onSkip?: () => void;
   onCancel?: () => void;
   allowSkip?: boolean;
   showProgress?: boolean;
@@ -31,6 +33,7 @@ interface WizardContainerProps {
   nextButtonText?: string;
   backButtonText?: string;
   cancelButtonText?: string;
+  skipButtonText?: string;
 }
 
 export const WizardContainer: React.FC<WizardContainerProps> = ({
@@ -38,6 +41,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   currentStep,
   onStepChange,
   onComplete,
+  onSkip,
   onCancel,
   allowSkip = false,
   showProgress = true,
@@ -45,6 +49,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   nextButtonText = 'Next',
   backButtonText = 'Back',
   cancelButtonText = 'Cancel',
+  skipButtonText = 'Skip for now',
 }) => {
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -130,6 +135,32 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
     }
   };
 
+  const handleSkip = () => {
+    setValidationError(null);
+
+    // Call onExit hook
+    if (currentStepData.onExit) {
+      currentStepData.onExit();
+    }
+
+    // Skip to next step or call onSkip handler if last step
+    if (isLastStep) {
+      if (onSkip) {
+        onSkip();
+      } else {
+        onComplete();
+      }
+    } else {
+      const nextStep = currentStep + 1;
+      onStepChange(nextStep);
+
+      // Call onEnter hook for next step
+      if (steps[nextStep]?.onEnter) {
+        steps[nextStep].onEnter!();
+      }
+    }
+  };
+
   const stepperSteps: Step[] = steps.map((step) => ({
     id: step.id,
     title: step.title,
@@ -195,6 +226,17 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
               className="px-6 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {backButtonText}
+            </button>
+          )}
+
+          {/* Show skip button if current step allows it */}
+          {currentStepData.allowStepSkip && (
+            <button
+              onClick={handleSkip}
+              disabled={isValidating}
+              className="px-6 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {skipButtonText}
             </button>
           )}
 

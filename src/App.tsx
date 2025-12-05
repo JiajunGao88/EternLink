@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   sha256,
@@ -26,7 +26,6 @@ import LoginPage from "./components/LoginPage";
 import RegistrationPage from "./components/RegistrationPage";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { PlanSelection } from "./components/PlanSelection";
-import { FrozenDashboard } from "./components/FrozenDashboard";
 
 // Default Configuration
 const DEFAULTS = {
@@ -52,7 +51,6 @@ function App() {
   const [showUserDashboard, setShowUserDashboard] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
-  const [showFrozenDashboard, setShowFrozenDashboard] = useState(false);
   const [, setUserAccountType] = useState<'user' | 'beneficiary' | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
@@ -71,6 +69,37 @@ function App() {
   const [account, setAccount] = useState<string>("");
   const [fileHash, setFileHash] = useState<string>("");
   const [txHash, setTxHash] = useState<string>("");
+
+  // Check authentication status on app load
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const accountType = localStorage.getItem('accountType');
+    const email = localStorage.getItem('userEmail');
+    const name = localStorage.getItem('userName');
+    const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+
+    if (token && accountType) {
+      // User is authenticated
+      setUserEmail(email || '');
+      setUserName(name || '');
+      setUserAccountType(accountType as 'user' | 'beneficiary');
+      setShowProductLanding(false);
+
+      if (accountType === 'beneficiary') {
+        // Beneficiary goes to beneficiary dashboard
+        setShowBeneficiaryDashboard(true);
+      } else {
+        // User account - check onboarding status
+        if (onboardingCompleted === 'true') {
+          // Onboarding complete - go to dashboard
+          setShowUserDashboard(true);
+        } else {
+          // Onboarding not complete - show onboarding
+          setShowOnboarding(true);
+        }
+      }
+    }
+  }, []);
 
   // Show Product Landing Page (New Marketing Page)
   if (showProductLanding) {
@@ -102,6 +131,8 @@ function App() {
         onLoginSuccess={(token, user) => {
           localStorage.setItem('authToken', token);
           localStorage.setItem('accountType', user.accountType);
+          localStorage.setItem('userEmail', user.email);
+          localStorage.setItem('userName', user.name || '');
           setUserAccountType(user.accountType);
           setUserEmail(user.email);
           setUserName(user.name || '');
@@ -115,14 +146,12 @@ function App() {
             const hasPlan = localStorage.getItem('subscriptionPlan');
             const onboardingCompleted = localStorage.getItem('onboardingCompleted');
 
-            if (!hasPlan) {
-              // No plan = show frozen dashboard
-              setShowFrozenDashboard(true);
-            } else if (!onboardingCompleted) {
+            if (hasPlan && !onboardingCompleted) {
               // Has plan but not onboarded = force onboarding
               setShowOnboarding(true);
             } else {
-              // Has plan and onboarded = show dashboard
+              // Either has plan and onboarded, or no plan = show dashboard
+              // Dashboard will show frozen state if no subscription
               setShowUserDashboard(true);
             }
           }
@@ -148,6 +177,8 @@ function App() {
           localStorage.setItem('accountType', accountType);
           setUserAccountType(accountType);
           if (user) {
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userName', user.name || '');
             setUserEmail(user.email);
             setUserName(user.name || '');
           }
@@ -157,8 +188,8 @@ function App() {
           if (accountType === 'beneficiary') {
             setShowBeneficiaryDashboard(true);
           } else {
-            // For user accounts, show frozen dashboard (need to buy plan first)
-            setShowFrozenDashboard(true);
+            // For user accounts, show user dashboard (will show frozen state if no subscription)
+            setShowUserDashboard(true);
           }
         }}
         onBackToHome={() => {
@@ -174,25 +205,6 @@ function App() {
   }
 
 
-  // Show Frozen Dashboard (no plan purchased)
-  if (showFrozenDashboard) {
-    return (
-      <FrozenDashboard
-        onSelectPlan={() => {
-          setShowFrozenDashboard(false);
-          setShowPlanSelection(true);
-        }}
-        onLogout={() => {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('accountType');
-          setUserAccountType(null);
-          setShowFrozenDashboard(false);
-          setShowProductLanding(true);
-        }}
-      />
-    );
-  }
-
   // Show Plan Selection
   if (showPlanSelection) {
     return (
@@ -205,7 +217,7 @@ function App() {
         }}
         onSkip={() => {
           setShowPlanSelection(false);
-          setShowFrozenDashboard(true); // Back to frozen if skipped
+          setShowUserDashboard(true); // Go to dashboard (will show frozen state)
         }}
       />
     );
@@ -216,6 +228,11 @@ function App() {
     return (
       <OnboardingWizard
         onComplete={() => {
+          setShowOnboarding(false);
+          setShowUserDashboard(true);
+        }}
+        onSkip={() => {
+          // User chose to skip plan - go to frozen dashboard
           setShowOnboarding(false);
           setShowUserDashboard(true);
         }}
@@ -272,6 +289,10 @@ function App() {
         }}
         onTryDemo={() => {
           setShowUserDashboard(false);
+        }}
+        onBuyPlan={() => {
+          setShowUserDashboard(false);
+          setShowPlanSelection(true);
         }}
       />
     );

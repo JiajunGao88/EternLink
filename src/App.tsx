@@ -487,7 +487,8 @@ function App() {
       
       if (token) {
         setStatus({ type: "info", message: "Uploading encrypted file to server..." });
-        const uploadResult = await uploadEncryptedFile(encryptedBlob, hashHex, fileInfo.name);
+        // Pass original file's MIME type for accurate restoration when decrypting
+        const uploadResult = await uploadEncryptedFile(encryptedBlob, hashHex, fileInfo.name, fileInfo.type);
         
         if (uploadResult.success) {
           uploadedToServer = true;

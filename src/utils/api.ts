@@ -181,7 +181,8 @@ export interface EncryptedFileInfo {
 export async function uploadEncryptedFile(
   encryptedBlob: Blob,
   fileHash: string,
-  originalName: string
+  originalName: string,
+  originalMimeType: string
 ): Promise<{ success: boolean; file?: EncryptedFileInfo; error?: string }> {
   try {
     const token = localStorage.getItem('authToken');
@@ -193,6 +194,7 @@ export async function uploadEncryptedFile(
     formData.append('file', encryptedBlob, `${originalName}.enc`);
     formData.append('fileHash', fileHash);
     formData.append('originalName', originalName);
+    formData.append('mimeType', originalMimeType); // Pass original file's MIME type
 
     const response = await fetch(`${API_BASE_URL}/api/files/upload`, {
       method: 'POST',

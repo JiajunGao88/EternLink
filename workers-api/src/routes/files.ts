@@ -74,6 +74,7 @@ fileRoutes.post('/upload', async (c) => {
     const file = formData.get('file') as File | null;
     const fileHash = formData.get('fileHash') as string | null;
     const originalName = formData.get('originalName') as string | null;
+    const mimeType = formData.get('mimeType') as string | null; // Original file's MIME type
 
     if (!file || !fileHash || !originalName) {
       return c.json({ 
@@ -108,14 +109,14 @@ fileRoutes.post('/upload', async (c) => {
       },
     });
 
-    // Save metadata to database
+    // Save metadata to database - use provided mimeType (original file's type)
     const [newFile] = await db.insert(encryptedFiles).values({
       userId,
       fileHash,
       r2Key,
       originalName,
       encryptedSize: arrayBuffer.byteLength,
-      mimeType: file.type || 'application/octet-stream',
+      mimeType: mimeType || 'application/octet-stream', // Use original file's MIME type
     }).returning();
 
     return c.json({

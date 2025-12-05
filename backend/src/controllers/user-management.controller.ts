@@ -376,6 +376,8 @@ export async function getCurrentUser(req: AuthRequest, res: Response): Promise<v
         freezeDays: true,
         twoFactorEnabled: true,
         referCode: true,
+        subscriptionActive: true,
+        onboardingCompleted: true,
         createdAt: true,
         updatedAt: true,
       },

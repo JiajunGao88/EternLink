@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FrozenOverview } from './FrozenOverview';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -13,6 +14,8 @@ interface UserData {
   referCode: string | null;
   lastLoginAt: string | null;
   createdAt: string;
+  subscriptionActive: boolean;
+  onboardingCompleted: boolean;
 }
 
 interface LinkedBeneficiary {
@@ -50,9 +53,10 @@ interface PendingDeathClaim {
 interface UserDashboardProps {
   onLogout: () => void;
   onTryDemo?: () => void;
+  onBuyPlan?: () => void; // Callback to trigger plan purchase/onboarding
 }
 
-export default function UserDashboard({ onLogout, onTryDemo }: UserDashboardProps) {
+export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDashboardProps) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [linkedBeneficiaries, setLinkedBeneficiaries] = useState<LinkedBeneficiary[]>([]);
   const [heartbeatStatus, setHeartbeatStatus] = useState<HeartbeatStatus | null>(null);
@@ -250,22 +254,61 @@ export default function UserDashboard({ onLogout, onTryDemo }: UserDashboardProp
     );
   }
 
+  const isFrozen = userData && !userData.subscriptionActive;
+
   return (
     <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.headerContent}>
-          <div>
-            <h1 style={styles.greeting}>Welcome Back</h1>
-            <p style={styles.welcomeText}>
-              EternLink have been helping you protect your family assets for {userData?.createdAt ? getDaysSince(userData.createdAt) : 0} days.
-            </p>
+      {/* Frozen overlay banner - shown on top of normal dashboard when no subscription */}
+      {isFrozen && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          style={styles.frozenBanner}
+        >
+          <div style={styles.frozenBannerContent}>
+            <div style={styles.frozenBannerLeft}>
+              <span style={styles.frozenIcon}>🔒</span>
+              <div>
+                <h3 style={styles.frozenBannerTitle}>Dashboard Locked</h3>
+                <p style={styles.frozenBannerMessage}>
+                  Purchase a subscription plan to unlock full access to your dashboard and start protecting your family's digital assets.
+                </p>
+              </div>
+            </div>
+            <motion.button
+              onClick={() => {
+                if (onBuyPlan) {
+                  onBuyPlan();
+                } else {
+                  alert('Plan purchase feature coming soon!');
+                }
+              }}
+              style={styles.frozenBannerButton}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Buy a Plan
+            </motion.button>
           </div>
-          <button onClick={onLogout} style={styles.logoutButton}>
-            Logout
-          </button>
+        </motion.div>
+      )}
+      {/* Main content - dimmed when frozen */}
+      <div style={isFrozen ? styles.dimmedContent : {}}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerContent}>
+            <div>
+              <h1 style={styles.greeting}>Welcome Back</h1>
+              <p style={styles.welcomeText}>
+                EternLink have been helping you protect your family assets for {userData?.createdAt ? getDaysSince(userData.createdAt) : 0} days.
+              </p>
+            </div>
+            <button onClick={onLogout} style={styles.logoutButton}>
+              Logout
+            </button>
+          </div>
         </div>
-      </div>
 
       {/* Status Messages */}
       <AnimatePresence>
@@ -617,6 +660,7 @@ export default function UserDashboard({ onLogout, onTryDemo }: UserDashboardProp
           </motion.div>
         )}
       </div>
+      </div>
     </div>
   );
 }
@@ -921,5 +965,61 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1rem',
     transition: 'all 0.3s ease',
     boxShadow: '0 4px 15px rgba(61, 162, 136, 0.3)',
+  },
+  frozenBanner: {
+    maxWidth: '1400px',
+    margin: '0 auto 24px auto',
+    background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(185, 28, 28, 0.1) 100%)',
+    border: '2px solid rgba(220, 38, 38, 0.4)',
+    borderRadius: '12px',
+    padding: '20px 24px',
+    boxShadow: '0 4px 20px rgba(220, 38, 38, 0.25)',
+  },
+  frozenBannerContent: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '24px',
+  },
+  frozenBannerLeft: {
+    display: 'flex',
+    alignItems: 'start',
+    gap: '16px',
+    flex: 1,
+  },
+  frozenIcon: {
+    fontSize: '2rem',
+    lineHeight: 1,
+  },
+  frozenBannerTitle: {
+    color: '#fca5a5',
+    fontSize: '1.25rem',
+    fontWeight: '700',
+    margin: '0 0 8px 0',
+  },
+  frozenBannerMessage: {
+    color: '#fecaca',
+    margin: 0,
+    fontSize: '0.95rem',
+    lineHeight: '1.5',
+    opacity: 0.95,
+  },
+  frozenBannerButton: {
+    padding: '12px 28px',
+    background: 'linear-gradient(135deg, #3DA288 0%, #2d8a6f 100%)',
+    border: 'none',
+    borderRadius: '8px',
+    color: 'white',
+    fontWeight: '700',
+    fontSize: '1rem',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 15px rgba(61, 162, 136, 0.3)',
+    whiteSpace: 'nowrap',
+  },
+  dimmedContent: {
+    opacity: 0.5,
+    pointerEvents: 'none',
+    userSelect: 'none',
   },
 };

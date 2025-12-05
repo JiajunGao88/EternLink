@@ -30,6 +30,8 @@ model User {
   twoFactorSecret       String?      @map("two_factor_secret") @db.VarChar(255) // Encrypted 2FA secret
   twoFactorBackupCodes  String?      @map("two_factor_backup_codes") @db.Text // Encrypted backup codes
   referCode             String?      @unique @map("refer_code") @db.VarChar(12) // Unique refer code for user accounts
+  subscriptionActive    Boolean      @default(false) @map("subscription_active") // Whether user has an active subscription/plan
+  onboardingCompleted   Boolean      @default(false) @map("onboarding_completed") // Whether user has completed onboarding wizard
   createdAt             DateTime     @default(now()) @map("created_at")
   updatedAt             DateTime     @updatedAt @map("updated_at")
 

@@ -355,6 +355,8 @@ export async function getAccountStatus(req: AuthRequest, res: Response): Promise
         emailNotificationDays: true,
         phoneNotificationDays: true,
         freezeDays: true,
+        subscriptionActive: true,
+        onboardingCompleted: true,
         createdAt: true,
       },
     });
@@ -394,6 +396,10 @@ export async function completeOnboarding(req: AuthRequest, res: Response): Promi
     } = req.body;
 
     const updateData: any = {};
+
+    // Mark onboarding as completed and activate subscription
+    updateData.onboardingCompleted = true;
+    updateData.subscriptionActive = true;
 
     // Save notification settings from onboarding
     if (notificationConfig) {

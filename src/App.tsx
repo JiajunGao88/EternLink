@@ -413,68 +413,12 @@ function App() {
   const handleServerFileSelect = (data: ArrayBuffer, fileInfo: EncryptedFileInfo) => {
     setEncryptedFile(data);
     setSelectedServerFile(fileInfo);
+    // Use the fileHash directly from file info (most reliable)
+    setDecryptFileHash(fileInfo.fileHash);
     setStatus({
       type: "info",
-      message: `Server file loaded: ${fileInfo.originalName}.enc (${(fileInfo.encryptedSize / 1024).toFixed(2)} KB)`,
+      message: `Cloud file loaded: ${fileInfo.originalName}.enc - File hash auto-filled`,
     });
-    // Extract file hash from the encrypted file
-    try {
-      const view = new Uint8Array(data);
-      // Check for ETERNLINK_SSS marker at end
-      const markerBytes = new TextEncoder().encode('ETERNLINK_SSS');
-      const markerStart = data.byteLength - markerBytes.length;
-      let hasMarker = true;
-      for (let i = 0; i < markerBytes.length; i++) {
-        if (view[markerStart + i] !== markerBytes[i]) {
-          hasMarker = false;
-          break;
-        }
-      }
-      if (hasMarker) {
-        // Extract embedded hash (64 hex chars = 64 bytes before marker)
-        const hashStart = markerStart - 64;
-        const hashBytes = view.slice(hashStart, markerStart);
-        const embeddedHash = new TextDecoder().decode(hashBytes);
-        setDecryptFileHash(embeddedHash);
-      }
-    } catch (err) {
-      console.warn('Could not extract embedded hash from server file:', err);
-    }
-  };
-
-  // Handle Encrypted File Selection (Decrypt mode)
-  const handleEncryptedFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-    
-    setSelectedServerFile(null); // Clear server file selection
-
-    if (!selectedFile.name.endsWith('.enc')) {
-      setStatus({
-        type: "error",
-        message: "Please select an .enc file",
-      });
-      return;
-    }
-
-    const content = await selectedFile.arrayBuffer();
-    setEncryptedFile(content);
-    setFile(selectedFile);
-    
-    // Auto-extract embedded file hash (if present in v3 format)
-    const embeddedHash = extractFileHashFromEncFile(content);
-    if (embeddedHash) {
-      setDecryptFileHash(embeddedHash);
-      setStatus({
-        type: "success",
-        message: `File loaded! Hash auto-detected: ${embeddedHash.slice(0, 10)}...`,
-      });
-    } else {
-      setStatus({
-        type: "info",
-        message: `Encrypted file loaded: ${selectedFile.name} (legacy format - enter hash manually)`,
-      });
-    }
   };
 
   // SSS Encrypt and Register
@@ -1015,10 +959,9 @@ function App() {
                         onClick={() => {
                           navigator.clipboard.writeText(keyShares.shareOne);
                           setCopiedShare1(true);
-                          setTimeout(() => setCopiedShare1(false), 2000);
                         }}
                         className={`mt-2 px-3 py-1.5 text-xs font-medium text-white rounded transition-all min-w-[100px] ${
-                          copiedShare1 ? 'bg-emerald-500' : 'bg-[#3DA288] hover:bg-[#2d8a6f]'
+                          copiedShare1 ? 'bg-emerald-500 cursor-default' : 'bg-[#3DA288] hover:bg-[#2d8a6f]'
                         }`}
                       >
                         {copiedShare1 ? '✓ Copied!' : 'Copy Share 1'}
@@ -1036,10 +979,9 @@ function App() {
                         onClick={() => {
                           navigator.clipboard.writeText(keyShares.shareTwo);
                           setCopiedShare2(true);
-                          setTimeout(() => setCopiedShare2(false), 2000);
                         }}
                         className={`mt-2 px-3 py-1.5 text-xs font-medium text-white rounded transition-all min-w-[100px] ${
-                          copiedShare2 ? 'bg-emerald-500' : 'bg-[#3DA288] hover:bg-[#2d8a6f]'
+                          copiedShare2 ? 'bg-emerald-500 cursor-default' : 'bg-[#3DA288] hover:bg-[#2d8a6f]'
                         }`}
                       >
                         {copiedShare2 ? '✓ Copied!' : 'Copy Share 2'}
@@ -1128,10 +1070,10 @@ function App() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[#C0C8D4] font-medium truncate">
-                            {selectedServerFile ? `${selectedServerFile.originalName}.enc` : 'Local file selected'}
+                            {selectedServerFile?.originalName}.enc
                           </p>
                           <p className="text-sm text-[#8b96a8]">
-                            {selectedServerFile ? 'From your secure storage' : 'From local device'}
+                            From your secure cloud storage
                           </p>
                         </div>
                         <button
@@ -1149,46 +1091,18 @@ function App() {
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Option 1: From Server */}
-                      {localStorage.getItem('authToken') && (
-                        <button
-                          onClick={() => setShowFilePicker(true)}
-                          className="flex flex-col items-center justify-center p-8 bg-[#0f1e2e]/80 border-2 border-dashed border-[#3DA288]/30 rounded-xl cursor-pointer hover:border-[#3DA288]/70 hover:bg-[#3DA288]/5 transition-all"
-                        >
-                          <div className="p-3 bg-[#3DA288]/20 rounded-full mb-3">
-                            <svg className="w-8 h-8 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                            </svg>
-                          </div>
-                          <span className="text-sm font-semibold text-[#3DA288]">From Your Files</span>
-                          <span className="text-xs text-[#8b96a8] mt-1">Select from server</span>
-                        </button>
-                      )}
-                      
-                      {/* Option 2: From Local */}
-                      <div className={localStorage.getItem('authToken') ? '' : 'col-span-2'}>
-                        <input
-                          type="file"
-                          accept=".enc"
-                          onChange={handleEncryptedFileSelect}
-                          className="hidden"
-                          id="encrypted-file-upload"
-                        />
-                        <label
-                          htmlFor="encrypted-file-upload"
-                          className="flex flex-col items-center justify-center p-8 bg-[#0f1e2e]/80 border-2 border-dashed border-[#C0C8D4]/30 rounded-xl cursor-pointer hover:border-[#C0C8D4]/50 transition-all h-full"
-                        >
-                          <div className="p-3 bg-[#C0C8D4]/10 rounded-full mb-3">
-                            <svg className="w-8 h-8 text-[#C0C8D4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                            </svg>
-                          </div>
-                          <span className="text-sm font-semibold text-[#C0C8D4]">From Device</span>
-                          <span className="text-xs text-[#8b96a8] mt-1">Upload .enc file</span>
-                        </label>
+                    <button
+                      onClick={() => setShowFilePicker(true)}
+                      className="w-full flex flex-col items-center justify-center p-12 bg-[#0f1e2e]/80 border-2 border-dashed border-[#3DA288]/30 rounded-xl cursor-pointer hover:border-[#3DA288]/70 hover:bg-[#3DA288]/5 transition-all"
+                    >
+                      <div className="p-4 bg-[#3DA288]/20 rounded-full mb-4">
+                        <svg className="w-10 h-10 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                        </svg>
                       </div>
-                    </div>
+                      <span className="text-base font-semibold text-[#3DA288]">Select Encrypted File</span>
+                      <span className="text-sm text-[#8b96a8] mt-1">Select from cloud</span>
+                    </button>
                   )}
                 </div>
 

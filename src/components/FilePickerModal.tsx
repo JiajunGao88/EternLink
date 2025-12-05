@@ -108,8 +108,8 @@ export default function FilePickerModal({ isOpen, onClose, onFileSelected }: Fil
           <div className="p-6 border-b border-[#C0C8D4]/10">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Select Encrypted File</h2>
-                <p className="text-sm text-[#8b96a8] mt-1">Choose a file from your secure storage</p>
+                <h2 className="text-xl font-bold text-white">Select from Cloud</h2>
+                <p className="text-sm text-[#8b96a8] mt-1">Choose a file from your secure cloud storage</p>
               </div>
               <button
                 onClick={onClose}
@@ -198,7 +198,7 @@ export default function FilePickerModal({ isOpen, onClose, onFileSelected }: Fil
           {/* Footer */}
           <div className="p-4 border-t border-[#C0C8D4]/10 bg-[#0a1628]/50">
             <p className="text-xs text-[#8b96a8] text-center">
-              💡 Tip: Files are stored securely on our servers with end-to-end encryption
+              ☁️ Files are stored securely in your cloud with end-to-end encryption
             </p>
           </div>
         </motion.div>

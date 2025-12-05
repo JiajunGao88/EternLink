@@ -25,12 +25,14 @@ app.use('*', logger());
 app.use('*', cors({
   origin: (origin, c) => {
     const env = c.env;
-    // Allow configured frontend URL and localhost for development
+    // Allow configured frontend URL, production domains, and localhost for development
     const allowedOrigins = [
       env.FRONTEND_URL,
       'http://localhost:5173',
       'http://localhost:5174',
       'https://eternlink.pages.dev',
+      'https://eternlink.co',
+      'https://www.eternlink.co',
     ];
     return allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
   },

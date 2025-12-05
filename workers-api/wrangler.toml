@@ -29,7 +29,7 @@ JWT_EXPIRES_IN = "7d"
 # Production environment
 [env.production]
 name = "eternlink-api-production"
-vars = { ENVIRONMENT = "production", FRONTEND_URL = "https://eternlink.pages.dev", JWT_EXPIRES_IN = "7d" }
+vars = { ENVIRONMENT = "production", FRONTEND_URL = "https://eternlink.co", JWT_EXPIRES_IN = "7d" }
 
 [[env.production.d1_databases]]
 binding = "DB"

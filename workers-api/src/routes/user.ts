@@ -260,6 +260,8 @@ userRoutes.post('/complete-onboarding', async (c) => {
   try {
     const updateData: Record<string, unknown> = {
       onboardingCompleted: true,
+      // Activate subscription when onboarding is completed (free trial or default active)
+      subscriptionActive: true,
       updatedAt: new Date(),
     };
 

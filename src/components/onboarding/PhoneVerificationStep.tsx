@@ -4,7 +4,7 @@
  * Add and verify phone number for SMS notifications.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../../config';
 
@@ -13,11 +13,13 @@ const API_URL = `${API_BASE_URL}/api`;
 interface PhoneVerificationStepProps {
   onVerified: (phoneNumber: string) => void;
   initialPhone?: string;
+  alreadyVerified?: boolean; // If user already has verified phone
 }
 
 export const PhoneVerificationStep: React.FC<PhoneVerificationStepProps> = ({
   onVerified,
   initialPhone,
+  alreadyVerified = false,
 }) => {
   const [phoneNumber, setPhoneNumber] = useState(initialPhone || '');
   const [isCodeSent, setIsCodeSent] = useState(false);
@@ -25,7 +27,46 @@ export const PhoneVerificationStep: React.FC<PhoneVerificationStepProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState(alreadyVerified);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check if phone is already verified on mount
+  useEffect(() => {
+    const checkPhoneStatus = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/user/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user?.phoneVerified && data.user?.phoneNumber) {
+            setPhoneNumber(data.user.phoneNumber);
+            setSuccess(true);
+            // Notify parent that phone is already verified
+            onVerified(data.user.phoneNumber);
+          } else if (data.user?.phoneNumber) {
+            // Has phone but not verified
+            setPhoneNumber(data.user.phoneNumber);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking phone status:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkPhoneStatus();
+  }, []);
 
   const formatPhoneNumber = (value: string) => {
     const cleaned = value.replace(/\D/g, '');
@@ -124,6 +165,19 @@ export const PhoneVerificationStep: React.FC<PhoneVerificationStepProps> = ({
     handleSendCode();
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-12">
+        <svg className="animate-spin h-12 w-12 text-[#C0C8D4] mx-auto mb-4" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+        <p className="text-gray-400">Checking phone verification status...</p>
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="max-w-2xl mx-auto text-center">
@@ -136,13 +190,25 @@ export const PhoneVerificationStep: React.FC<PhoneVerificationStepProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </motion.div>
-        <h2 className="text-3xl font-bold text-white mb-4">Phone Verified!</h2>
+        <h2 className="text-3xl font-bold text-white mb-4">Phone Already Verified!</h2>
         <p className="text-gray-300 mb-2">
-          Your phone number <span className="text-[#C0C8D4] font-semibold">{phoneNumber}</span> has been verified.
+          Your phone number <span className="text-[#C0C8D4] font-semibold">{phoneNumber}</span> is verified.
         </p>
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-400 text-sm mb-6">
           You'll receive SMS alerts when you miss check-ins.
         </p>
+        
+        {/* Option to change phone number */}
+        <button
+          onClick={() => {
+            setSuccess(false);
+            setPhoneNumber('');
+            setIsCodeSent(false);
+          }}
+          className="text-sm text-gray-400 hover:text-white underline transition-colors"
+        >
+          Change phone number
+        </button>
       </div>
     );
   }

@@ -14,7 +14,8 @@ import {
 } from "./utils/crypto";
 import { splitKey, reconstructKey, type KeyShares } from "./utils/secretSharing";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
-import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain } from "./utils/api";
+import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain, uploadEncryptedFile, EncryptedFileInfo } from "./utils/api";
+import FilePickerModal from "./components/FilePickerModal";
 import ProductLandingPage from "./components/ProductLandingPage";
 import BeneficiaryRegistrationPage from "./components/BeneficiaryRegistrationPage";
 import BeneficiaryDashboard from "./components/BeneficiaryDashboard";
@@ -100,6 +101,10 @@ function App() {
   // Copy button states
   const [copiedShare1, setCopiedShare1] = useState(false);
   const [copiedShare2, setCopiedShare2] = useState(false);
+  
+  // File picker modal state
+  const [showFilePicker, setShowFilePicker] = useState(false);
+  const [selectedServerFile, setSelectedServerFile] = useState<EncryptedFileInfo | null>(null);
 
   // Check authentication status on app load
   useEffect(() => {
@@ -404,10 +409,45 @@ function App() {
     setShowShares(false);
   };
 
+  // Handle file selection from server
+  const handleServerFileSelect = (data: ArrayBuffer, fileInfo: EncryptedFileInfo) => {
+    setEncryptedFile(data);
+    setSelectedServerFile(fileInfo);
+    setStatus({
+      type: "info",
+      message: `Server file loaded: ${fileInfo.originalName}.enc (${(fileInfo.encryptedSize / 1024).toFixed(2)} KB)`,
+    });
+    // Extract file hash from the encrypted file
+    try {
+      const view = new Uint8Array(data);
+      // Check for ETERNLINK_SSS marker at end
+      const markerBytes = new TextEncoder().encode('ETERNLINK_SSS');
+      const markerStart = data.byteLength - markerBytes.length;
+      let hasMarker = true;
+      for (let i = 0; i < markerBytes.length; i++) {
+        if (view[markerStart + i] !== markerBytes[i]) {
+          hasMarker = false;
+          break;
+        }
+      }
+      if (hasMarker) {
+        // Extract embedded hash (64 hex chars = 64 bytes before marker)
+        const hashStart = markerStart - 64;
+        const hashBytes = view.slice(hashStart, markerStart);
+        const embeddedHash = new TextDecoder().decode(hashBytes);
+        setDecryptFileHash(embeddedHash);
+      }
+    } catch (err) {
+      console.warn('Could not extract embedded hash from server file:', err);
+    }
+  };
+
   // Handle Encrypted File Selection (Decrypt mode)
   const handleEncryptedFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
+    
+    setSelectedServerFile(null); // Clear server file selection
 
     if (!selectedFile.name.endsWith('.enc')) {
       setStatus({
@@ -490,12 +530,32 @@ function App() {
         console.warn('Failed to save Share 1 to localStorage:', e);
       }
 
-      // 6. Pack and download encrypted file (with embedded file hash)
+      // 6. Pack encrypted file (with embedded file hash)
       const encryptedBlob = packEncryptedFileSSS(encrypted, iv, hashHex);
-      const encryptedFileName = fileInfo.name + ".enc";
-      downloadFile(encryptedBlob, encryptedFileName);
+      
+      // 7. Check if user is logged in and upload to server
+      const token = localStorage.getItem('authToken');
+      let uploadedToServer = false;
+      
+      if (token) {
+        setStatus({ type: "info", message: "Uploading encrypted file to server..." });
+        const uploadResult = await uploadEncryptedFile(encryptedBlob, hashHex, fileInfo.name);
+        
+        if (uploadResult.success) {
+          uploadedToServer = true;
+          console.log('File uploaded to server:', uploadResult.file);
+        } else if (!uploadResult.error?.includes('already uploaded')) {
+          console.warn('Server upload failed, falling back to local download:', uploadResult.error);
+        }
+      }
+      
+      // If not logged in or upload failed, download locally
+      if (!uploadedToServer && !token) {
+        const encryptedFileName = fileInfo.name + ".enc";
+        downloadFile(encryptedBlob, encryptedFileName);
+      }
 
-      // 7. Register file hash + keyShare3 on blockchain
+      // 8. Register file hash + keyShare3 on blockchain
       setStatus({ type: "info", message: "Registering on blockchain..." });
       const result = await registerFileHashSSS(
         hashHex,
@@ -505,11 +565,16 @@ function App() {
         fileInfo.type
       );
 
+      // Always show key shares, even if already registered
+      setShowShares(true);
+
       if (!result.success) {
         if (result.error?.includes('already registered')) {
           setStatus({
             type: "success",
-            message: "This file is already registered on blockchain",
+            message: uploadedToServer 
+              ? "File encrypted and saved to your account! (Already registered on blockchain)"
+              : "This file is already registered on blockchain. Key shares shown below.",
           });
           return;
         }
@@ -517,10 +582,11 @@ function App() {
       }
 
       setTxHash(result.txHash || "");
-      setShowShares(true);
       setStatus({
         type: "success",
-        message: "File encrypted and registered! Save your key shares below.",
+        message: uploadedToServer 
+          ? "File encrypted and saved to your account! Save your key shares below."
+          : "File encrypted and registered! Save your key shares below.",
       });
     } catch (error: any) {
       console.error(error);
@@ -1051,28 +1117,79 @@ function App() {
                 </div>
 
                 <div className="mb-6">
-                  <input
-                    type="file"
-                    accept=".enc"
-                    onChange={handleEncryptedFileSelect}
-                    className="hidden"
-                    id="encrypted-file-upload"
-                  />
-                  <label
-                    htmlFor="encrypted-file-upload"
-                    className="flex flex-col items-center justify-center p-12 bg-[#0f1e2e]/80 border-2 border-dashed border-[#C0C8D4]/30 rounded-xl cursor-pointer hover:border-[#3DA288]/50 transition-all min-h-[200px]"
-                  >
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                      <path d="M24 32V8M24 32L16 24M24 32L32 24" stroke="#C0C8D4" strokeWidth="2.5" strokeLinecap="round"/>
-                      <path d="M8 32V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V32" stroke="#3DA288" strokeWidth="2.5" strokeLinecap="round"/>
-                    </svg>
-                    <span className="text-base font-semibold text-[#C0C8D4] mt-4">
-                      {file ? file.name : 'Select encrypted file (.enc)'}
-                    </span>
-                    <span className="text-sm text-[#8b96a8] mt-1">
-                      Upload the .enc file to decrypt
-                    </span>
-                  </label>
+                  {/* File selection display */}
+                  {(encryptedFile || selectedServerFile) ? (
+                    <div className="p-4 bg-[#0f1e2e]/80 border border-[#3DA288]/50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-[#3DA288]/20 rounded-lg">
+                          <svg className="w-8 h-8 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[#C0C8D4] font-medium truncate">
+                            {selectedServerFile ? `${selectedServerFile.originalName}.enc` : 'Local file selected'}
+                          </p>
+                          <p className="text-sm text-[#8b96a8]">
+                            {selectedServerFile ? 'From your secure storage' : 'From local device'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEncryptedFile(null);
+                            setSelectedServerFile(null);
+                            setDecryptFileHash('');
+                          }}
+                          className="p-2 text-[#8b96a8] hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Option 1: From Server */}
+                      {localStorage.getItem('authToken') && (
+                        <button
+                          onClick={() => setShowFilePicker(true)}
+                          className="flex flex-col items-center justify-center p-8 bg-[#0f1e2e]/80 border-2 border-dashed border-[#3DA288]/30 rounded-xl cursor-pointer hover:border-[#3DA288]/70 hover:bg-[#3DA288]/5 transition-all"
+                        >
+                          <div className="p-3 bg-[#3DA288]/20 rounded-full mb-3">
+                            <svg className="w-8 h-8 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                            </svg>
+                          </div>
+                          <span className="text-sm font-semibold text-[#3DA288]">From Your Files</span>
+                          <span className="text-xs text-[#8b96a8] mt-1">Select from server</span>
+                        </button>
+                      )}
+                      
+                      {/* Option 2: From Local */}
+                      <div className={localStorage.getItem('authToken') ? '' : 'col-span-2'}>
+                        <input
+                          type="file"
+                          accept=".enc"
+                          onChange={handleEncryptedFileSelect}
+                          className="hidden"
+                          id="encrypted-file-upload"
+                        />
+                        <label
+                          htmlFor="encrypted-file-upload"
+                          className="flex flex-col items-center justify-center p-8 bg-[#0f1e2e]/80 border-2 border-dashed border-[#C0C8D4]/30 rounded-xl cursor-pointer hover:border-[#C0C8D4]/50 transition-all h-full"
+                        >
+                          <div className="p-3 bg-[#C0C8D4]/10 rounded-full mb-3">
+                            <svg className="w-8 h-8 text-[#C0C8D4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                          </div>
+                          <span className="text-sm font-semibold text-[#C0C8D4]">From Device</span>
+                          <span className="text-xs text-[#8b96a8] mt-1">Upload .enc file</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* AUTO MODE: 1 Share + Blockchain */}
@@ -1370,6 +1487,13 @@ function App() {
           </p>
         </div>
       </footer>
+
+      {/* File Picker Modal */}
+      <FilePickerModal
+        isOpen={showFilePicker}
+        onClose={() => setShowFilePicker(false)}
+        onFileSelected={handleServerFileSelect}
+      />
     </div>
   );
 }

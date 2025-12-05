@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { API_BASE_URL } from '../config';
+import YourFilesTab from './YourFilesTab';
 
 const API_URL = `${API_BASE_URL}/api`;
 
@@ -65,7 +66,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'beneficiaries' | 'heartbeat'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'beneficiaries' | 'heartbeat' | 'files'>('overview');
 
   useEffect(() => {
     fetchUserData();
@@ -365,6 +366,15 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
           Heartbeat Status
         </button>
         <button
+          onClick={() => setActiveTab('files')}
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'files' ? styles.activeTab : {}),
+          }}
+        >
+          Your Files
+        </button>
+        <button
           onClick={onTryDemo}
           style={styles.tab}
         >
@@ -657,6 +667,27 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
               ) : (
                 <p style={styles.emptyStateText}>No heartbeat data available</p>
               )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Your Files Tab */}
+        {activeTab === 'files' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div style={styles.card}>
+              <YourFilesTab
+                onDecryptFile={(_fileHash) => {
+                  // Switch to encryption mode with this file
+                  if (onTryDemo) {
+                    onTryDemo();
+                  }
+                  // TODO: Pass fileHash to decrypt mode
+                }}
+              />
             </div>
           </motion.div>
         )}

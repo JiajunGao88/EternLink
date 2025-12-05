@@ -4,9 +4,20 @@ interface ProductLandingPageProps {
   onTryDemo: () => void;
   onRegisterBeneficiary: () => void;
   onLogin: () => void;
+  isLoggedIn?: boolean;
+  userName?: string;
+  onDashboard?: () => void;
+  onLogout?: () => void;
 }
 
-export default function ProductLandingPage({ onTryDemo, onLogin }: ProductLandingPageProps) {
+export default function ProductLandingPage({ 
+  onTryDemo, 
+  onLogin,
+  isLoggedIn = false,
+  userName = '',
+  onDashboard,
+  onLogout,
+}: ProductLandingPageProps) {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -70,12 +81,35 @@ export default function ProductLandingPage({ onTryDemo, onLogin }: ProductLandin
               >
                 How It Works
               </button>
-              <button
-                onClick={onLogin}
-                className="px-6 py-2 bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-[#3DA288]/30 transition-all"
-              >
-                Get Started Free
-              </button>
+              
+              {isLoggedIn ? (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={onDashboard}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#1a2942]/60 border border-[#C0C8D4]/20 rounded-lg hover:border-[#3DA288]/50 transition-all"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] flex items-center justify-center text-white font-semibold text-sm">
+                      {userName ? userName.charAt(0).toUpperCase() : '👤'}
+                    </div>
+                    <span className="text-[#C0C8D4] font-medium">
+                      {userName || 'Dashboard'}
+                    </span>
+                  </button>
+                  <button
+                    onClick={onLogout}
+                    className="px-4 py-2 text-[#8b96a8] hover:text-white transition-colors text-sm"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={onLogin}
+                  className="px-6 py-2 bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-[#3DA288]/30 transition-all"
+                >
+                  Get Started Free
+                </button>
+              )}
             </div>
           </div>
         </div>

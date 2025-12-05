@@ -134,6 +134,12 @@ function App() {
 
   // Show Product Landing Page (New Marketing Page)
   if (showProductLanding) {
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken');
+    const accountType = localStorage.getItem('accountType');
+    const storedName = localStorage.getItem('userName');
+    const isLoggedIn = !!(token && accountType);
+    
     return (
       <ProductLandingPage
         onTryDemo={() => {
@@ -147,6 +153,29 @@ function App() {
           setShowProductLanding(false);
           setShowLogin(true);
         }}
+        isLoggedIn={isLoggedIn}
+        userName={storedName || userEmail}
+        onDashboard={() => {
+          setShowProductLanding(false);
+          if (accountType === 'beneficiary') {
+            setShowBeneficiaryDashboard(true);
+          } else {
+            setShowUserDashboard(true);
+          }
+        }}
+        onLogout={() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('accountType');
+          localStorage.removeItem('userEmail');
+          localStorage.removeItem('userName');
+          localStorage.removeItem('onboardingCompleted');
+          setUserEmail('');
+          setUserName('');
+          setUserAccountType(null);
+          // Force re-render
+          setShowProductLanding(false);
+          setTimeout(() => setShowProductLanding(true), 0);
+        }}
       />
     );
   }
@@ -156,30 +185,35 @@ function App() {
     return (
       <LoginPage
         onLoginSuccess={(token, user) => {
+          // Safety check for accountType
+          const accountType = user?.accountType || 'user';
+          
           localStorage.setItem('authToken', token);
-          localStorage.setItem('accountType', user.accountType);
-          localStorage.setItem('userEmail', user.email);
-          localStorage.setItem('userName', user.name || '');
-          setUserAccountType(user.accountType);
-          setUserEmail(user.email);
-          setUserName(user.name || '');
+          localStorage.setItem('accountType', accountType);
+          localStorage.setItem('userEmail', user?.email || '');
+          localStorage.setItem('userName', user?.name || '');
+          
+          // Store onboarding status from server
+          if (user?.onboardingCompleted) {
+            localStorage.setItem('onboardingCompleted', 'true');
+          }
+          
+          setUserAccountType(accountType as 'user' | 'beneficiary');
+          setUserEmail(user?.email || '');
+          setUserName(user?.name || '');
           setShowLogin(false);
 
           // Redirect based on account type
-          if (user.accountType === 'beneficiary') {
+          if (accountType === 'beneficiary') {
             setShowBeneficiaryDashboard(true);
           } else {
-            // For user accounts, check subscription status
-            const hasPlan = localStorage.getItem('subscriptionPlan');
-            const onboardingCompleted = localStorage.getItem('onboardingCompleted');
-
-            if (hasPlan && !onboardingCompleted) {
-              // Has plan but not onboarded = force onboarding
-              setShowOnboarding(true);
-            } else {
-              // Either has plan and onboarded, or no plan = show dashboard
-              // Dashboard will show frozen state if no subscription
+            // For user accounts, check onboarding status
+            if (user?.onboardingCompleted) {
+              // Onboarding completed = show dashboard
               setShowUserDashboard(true);
+            } else {
+              // Not onboarded = start onboarding
+              setShowOnboarding(true);
             }
           }
         }}
@@ -725,10 +759,23 @@ function App() {
             {/* Nav Buttons */}
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setShowProductLanding(true)}
+                onClick={() => {
+                  // If user is logged in, go back to dashboard
+                  const token = localStorage.getItem('authToken');
+                  const accountType = localStorage.getItem('accountType');
+                  if (token && accountType) {
+                    if (accountType === 'beneficiary') {
+                      setShowBeneficiaryDashboard(true);
+                    } else {
+                      setShowUserDashboard(true);
+                    }
+                  } else {
+                    setShowProductLanding(true);
+                  }
+                }}
                 className="px-6 py-2 text-[#C0C8D4] hover:text-[#3DA288] transition-colors font-medium"
               >
-                ← Back to Home
+                ← Back
               </button>
               <button
                 onClick={() => setShowDemo(true)}

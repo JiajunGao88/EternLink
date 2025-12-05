@@ -68,9 +68,6 @@ function App() {
   const [userEmail, setUserEmail] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
   const [_selectedPlan, setSelectedPlan] = useState<'individual' | 'family' | null>(null);
-  const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
-  const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
-  const [ipfsCid, setIpfsCid] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
   const [status, setStatus] = useState<{

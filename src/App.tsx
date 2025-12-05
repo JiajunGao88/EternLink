@@ -185,8 +185,12 @@ function App() {
     return (
       <LoginPage
         onLoginSuccess={(token, user) => {
+          console.log('Login success, user data:', user); // Debug log
+          
           // Safety check for accountType
           const accountType = user?.accountType || 'user';
+          // Handle both boolean and number (SQLite returns 1/0)
+          const onboardingComplete = user?.onboardingCompleted === true || user?.onboardingCompleted === 1;
           
           localStorage.setItem('authToken', token);
           localStorage.setItem('accountType', accountType);
@@ -194,7 +198,7 @@ function App() {
           localStorage.setItem('userName', user?.name || '');
           
           // Store onboarding status from server
-          if (user?.onboardingCompleted) {
+          if (onboardingComplete) {
             localStorage.setItem('onboardingCompleted', 'true');
           }
           
@@ -208,7 +212,7 @@ function App() {
             setShowBeneficiaryDashboard(true);
           } else {
             // For user accounts, check onboarding status
-            if (user?.onboardingCompleted) {
+            if (onboardingComplete) {
               // Onboarding completed = show dashboard
               setShowUserDashboard(true);
             } else {

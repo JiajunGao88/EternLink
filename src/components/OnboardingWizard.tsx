@@ -57,37 +57,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     beneficiaries: 'pending',
   });
 
-  // Verify token is valid on mount
-  useEffect(() => {
-    const verifyToken = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        // No token, trigger logout
-        if (onLogout) onLogout();
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_URL}/user/profile`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.status === 401) {
-          // Token invalid/expired, trigger logout
-          console.warn('Token expired, logging out...');
-          alert('Your session has expired. Please log in again.');
-          if (onLogout) onLogout();
-        }
-      } catch (err) {
-        console.error('Error verifying token:', err);
-      }
-    };
-
-    verifyToken();
-  }, [onLogout]);
-
   // Load saved progress on mount
   useEffect(() => {
     const savedProgress = localStorage.getItem(ONBOARDING_PROGRESS_KEY);

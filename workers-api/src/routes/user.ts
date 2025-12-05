@@ -463,21 +463,40 @@ userRoutes.post('/voice/upload', async (c) => {
   const db = createDb(c.env.DB);
   
   try {
-    const formData = await c.req.formData();
-    const voiceFile = formData.get('voice');
-    
-    if (!voiceFile || !(voiceFile instanceof File)) {
-      return c.json({ success: false, error: 'Voice file is required' }, 400);
+    const contentType = c.req.header('Content-Type') || '';
+    let voiceData: string | null = null;
+
+    if (contentType.includes('multipart/form-data')) {
+      // Handle FormData upload
+      const formData = await c.req.formData();
+      const voiceFile = formData.get('voice');
+      
+      if (voiceFile && voiceFile instanceof File) {
+        const arrayBuffer = await voiceFile.arrayBuffer();
+        // Safe base64 encoding for large files
+        const uint8Array = new Uint8Array(arrayBuffer);
+        let binary = '';
+        const chunkSize = 8192;
+        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+          const chunk = uint8Array.subarray(i, i + chunkSize);
+          binary += String.fromCharCode.apply(null, Array.from(chunk));
+        }
+        voiceData = btoa(binary);
+      }
+    } else if (contentType.includes('application/json')) {
+      // Handle JSON with base64 voice data
+      const body = await c.req.json();
+      voiceData = body.voiceData || body.voice || body.voiceSignature || body.data;
     }
 
-    // Convert to base64 for storage (in production, use R2 or Azure)
-    const arrayBuffer = await voiceFile.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    if (!voiceData) {
+      return c.json({ success: false, error: 'Voice data is required' }, 400);
+    }
 
-    // Store voice signature (simplified - in production use voice biometric service)
+    // Store voice signature
     await db.update(users)
       .set({ 
-        voiceSignature: base64,
+        voiceSignature: voiceData,
         updatedAt: new Date() 
       })
       .where(eq(users.id, userId));

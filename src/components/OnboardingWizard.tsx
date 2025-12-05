@@ -5,7 +5,7 @@
  * Enforced after email verification, before accessing the dashboard.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 
 const API_URL = `${API_BASE_URL}/api`;
@@ -31,6 +31,17 @@ interface OnboardingData {
   beneficiaries?: any[];
 }
 
+// Step completion status
+interface StepStatus {
+  welcome: 'completed' | 'skipped' | 'pending';
+  notifications: 'completed' | 'skipped' | 'pending';
+  phone: 'completed' | 'skipped' | 'pending';
+  voice: 'completed' | 'skipped' | 'pending';
+  beneficiaries: 'completed' | 'skipped' | 'pending';
+}
+
+const ONBOARDING_PROGRESS_KEY = 'eternlink_onboarding_progress';
+
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   userName,
   onLogout,
@@ -38,25 +49,82 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({});
+  const [stepStatus, setStepStatus] = useState<StepStatus>({
+    welcome: 'pending',
+    notifications: 'pending',
+    phone: 'pending',
+    voice: 'pending',
+    beneficiaries: 'pending',
+  });
+
+  // Load saved progress on mount
+  useEffect(() => {
+    const savedProgress = localStorage.getItem(ONBOARDING_PROGRESS_KEY);
+    if (savedProgress) {
+      try {
+        const { stepStatus: savedStatus, currentStep: savedStep } = JSON.parse(savedProgress);
+        if (savedStatus) setStepStatus(savedStatus);
+        if (savedStep !== undefined) setCurrentStep(savedStep);
+      } catch (e) {
+        console.error('Failed to load onboarding progress:', e);
+      }
+    }
+  }, []);
+
+  // Save progress whenever step status changes
+  const saveProgress = (newStatus: StepStatus, newStep: number) => {
+    localStorage.setItem(ONBOARDING_PROGRESS_KEY, JSON.stringify({
+      stepStatus: newStatus,
+      currentStep: newStep,
+    }));
+  };
+
+  // Mark current step as completed and advance
+  const markStepCompleted = (stepId: keyof StepStatus) => {
+    const newStatus = { ...stepStatus, [stepId]: 'completed' as const };
+    setStepStatus(newStatus);
+    saveProgress(newStatus, currentStep);
+  };
+
+  // Mark current step as skipped and advance
+  const markStepSkipped = (stepId: keyof StepStatus) => {
+    const newStatus = { ...stepStatus, [stepId]: 'skipped' as const };
+    setStepStatus(newStatus);
+    saveProgress(newStatus, currentStep);
+  };
 
   const handleNotificationSave = (config: NotificationConfig) => {
     setOnboardingData((prev) => ({ ...prev, notificationConfig: config }));
+    markStepCompleted('notifications');
   };
 
   const handlePhoneVerified = (phoneNumber: string) => {
     setOnboardingData((prev) => ({ ...prev, phoneNumber }));
+    markStepCompleted('phone');
   };
 
   const handleVoiceSaved = (voiceSignature: string) => {
     setOnboardingData((prev) => ({ ...prev, voiceSignature }));
+    markStepCompleted('voice');
   };
 
   const handleBeneficiariesComplete = (beneficiaries: any[]) => {
     setOnboardingData((prev) => ({ ...prev, beneficiaries }));
+    markStepCompleted('beneficiaries');
   };
 
   const handleBeneficiariesChange = (beneficiaries: any[]) => {
     setOnboardingData((prev) => ({ ...prev, beneficiaries }));
+  };
+
+  // Handle step change - mark Welcome as completed when moving past it
+  const handleStepChange = (newStep: number) => {
+    // Mark welcome step completed when moving past step 0
+    if (currentStep === 0 && newStep > 0) {
+      markStepCompleted('welcome');
+    }
+    setCurrentStep(newStep);
+    saveProgress(stepStatus, newStep);
   };
 
   const handleComplete = async () => {
@@ -64,6 +132,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       const token = localStorage.getItem('authToken');
       if (token) {
         try {
+          // Calculate which steps were completed vs skipped
+          const completedSteps = Object.entries(stepStatus)
+            .filter(([_, status]) => status === 'completed')
+            .map(([step]) => step);
+          const skippedSteps = Object.entries(stepStatus)
+            .filter(([_, status]) => status === 'skipped' || status === 'pending')
+            .map(([step]) => step);
+
           // Save onboarding data to backend
           const response = await fetch(`${API_URL}/user/complete-onboarding`, {
             method: 'POST',
@@ -73,6 +149,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             },
             body: JSON.stringify({
               notificationConfig: onboardingData.notificationConfig,
+              completedSteps,
+              skippedSteps,
+              phoneVerified: stepStatus.phone === 'completed',
+              voiceRecorded: stepStatus.voice === 'completed',
+              beneficiariesAdded: stepStatus.beneficiaries === 'completed',
             }),
           });
 
@@ -82,17 +163,20 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             throw new Error(error.error || 'Failed to complete onboarding');
           }
 
-          // Mark onboarding as complete in localStorage after successful backend save
+          // Mark onboarding as complete in localStorage
           localStorage.setItem('onboardingCompleted', 'true');
+          // Save step status for dashboard to show incomplete items
+          localStorage.setItem('onboardingStepStatus', JSON.stringify(stepStatus));
+          // Clear progress tracker
+          localStorage.removeItem(ONBOARDING_PROGRESS_KEY);
 
-          console.log('Onboarding completed successfully');
+          console.log('Onboarding completed successfully', { completedSteps, skippedSteps });
 
-          // Force a page reload to refresh all user data and remove cached state
+          // Force a page reload to refresh all user data
           window.location.reload();
           return;
         } catch (apiError) {
           console.error('Error completing onboarding:', apiError);
-          // Don't proceed if backend save failed - user needs subscription activated
           alert('Failed to complete onboarding. Please try again.');
           return;
         }
@@ -107,12 +191,43 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     }
   };
 
+  // Skip current step and move to next
+  const handleSkipStep = () => {
+    const stepIds: (keyof StepStatus)[] = ['welcome', 'notifications', 'phone', 'voice', 'beneficiaries'];
+    const currentStepId = stepIds[currentStep];
+    
+    if (currentStepId) {
+      markStepSkipped(currentStepId);
+    }
+    
+    // Move to next step
+    if (currentStep < wizardSteps.length - 1) {
+      handleStepChange(currentStep + 1);
+    }
+  };
+
   const handleSkip = async () => {
     try {
       const token = localStorage.getItem('authToken');
       if (token) {
         try {
-          // Save onboarding data to backend (same as complete)
+          // Mark remaining steps as skipped
+          const stepIds: (keyof StepStatus)[] = ['welcome', 'notifications', 'phone', 'voice', 'beneficiaries'];
+          const finalStatus = { ...stepStatus };
+          stepIds.forEach((stepId, idx) => {
+            if (idx >= currentStep && finalStatus[stepId] === 'pending') {
+              finalStatus[stepId] = 'skipped';
+            }
+          });
+
+          const completedSteps = Object.entries(finalStatus)
+            .filter(([_, status]) => status === 'completed')
+            .map(([step]) => step);
+          const skippedSteps = Object.entries(finalStatus)
+            .filter(([_, status]) => status === 'skipped')
+            .map(([step]) => step);
+
+          // Save onboarding data to backend
           const response = await fetch(`${API_URL}/user/complete-onboarding`, {
             method: 'POST',
             headers: {
@@ -121,6 +236,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             },
             body: JSON.stringify({
               notificationConfig: onboardingData.notificationConfig,
+              completedSteps,
+              skippedSteps,
+              phoneVerified: finalStatus.phone === 'completed',
+              voiceRecorded: finalStatus.voice === 'completed',
+              beneficiariesAdded: finalStatus.beneficiaries === 'completed',
             }),
           });
 
@@ -130,12 +250,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             throw new Error(error.error || 'Failed to complete onboarding');
           }
 
-          // Mark onboarding as complete in localStorage after successful backend save
+          // Mark onboarding as complete in localStorage
           localStorage.setItem('onboardingCompleted', 'true');
+          localStorage.setItem('onboardingStepStatus', JSON.stringify(finalStatus));
+          localStorage.removeItem(ONBOARDING_PROGRESS_KEY);
 
-          console.log('Onboarding skipped and completed successfully');
+          console.log('Onboarding skipped', { completedSteps, skippedSteps });
 
-          // Force a page reload to refresh all user data and remove cached state
+          // Force a page reload
           window.location.reload();
           return;
         } catch (apiError) {
@@ -158,13 +280,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     {
       id: 'welcome',
       title: 'Welcome',
-      description: 'Introduction',
+      description: stepStatus.welcome === 'completed' ? '✓ Done' : 'Introduction',
       component: <WelcomeStep userName={userName} />,
     },
     {
       id: 'notifications',
       title: 'Notifications',
-      description: 'Set alerts',
+      description: stepStatus.notifications === 'completed' ? '✓ Configured' : 'Set alerts',
       component: (
         <NotificationStep
           onSave={handleNotificationSave}
@@ -178,28 +300,28 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     {
       id: 'phone',
       title: 'Phone',
-      description: 'Verify number',
+      description: stepStatus.phone === 'completed' ? '✓ Verified' : stepStatus.phone === 'skipped' ? '— Skipped' : 'Verify number',
       component: <PhoneVerificationStep onVerified={handlePhoneVerified} />,
-      allowStepSkip: true, // Optional - can skip phone verification
+      allowStepSkip: true,
     },
     {
       id: 'voice',
       title: 'Voice',
-      description: 'Record signature',
+      description: stepStatus.voice === 'completed' ? '✓ Recorded' : stepStatus.voice === 'skipped' ? '— Skipped' : 'Record signature',
       component: <VoiceSignatureStep onSaved={handleVoiceSaved} />,
-      allowStepSkip: true, // Optional - can skip voice signature
+      allowStepSkip: true,
     },
     {
       id: 'beneficiaries',
       title: 'Beneficiaries',
-      description: 'Add contacts',
+      description: stepStatus.beneficiaries === 'completed' ? '✓ Added' : stepStatus.beneficiaries === 'skipped' ? '— Skipped' : 'Add contacts',
       component: (
         <BeneficiaryStep
           onComplete={handleBeneficiariesComplete}
           onChange={handleBeneficiariesChange}
         />
       ),
-      allowStepSkip: true, // Allow skipping this step
+      allowStepSkip: true,
     },
   ];
 
@@ -243,18 +365,31 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       {/* Spacer for fixed header */}
       <div className="h-16"></div>
       
+      {/* Progress Summary */}
+      <div className="max-w-4xl mx-auto px-6 mb-4">
+        <div className="flex items-center justify-center gap-2 text-sm text-[#8b96a8]">
+          <span className="text-green-400">✓ {Object.values(stepStatus).filter(s => s === 'completed').length} completed</span>
+          <span>·</span>
+          <span className="text-yellow-400">— {Object.values(stepStatus).filter(s => s === 'skipped').length} skipped</span>
+          <span>·</span>
+          <span>{Object.values(stepStatus).filter(s => s === 'pending').length} remaining</span>
+        </div>
+      </div>
+
       <WizardContainer
         steps={wizardSteps}
         currentStep={currentStep}
-        onStepChange={setCurrentStep}
+        onStepChange={handleStepChange}
         onComplete={handleComplete}
         onSkip={handleSkip}
+        onSkipStep={handleSkipStep}
         allowSkip={true}
         showProgress={true}
         completeButtonText="Complete Setup & Go to Dashboard"
-        nextButtonText="Continue"
+        nextButtonText={stepStatus[(['welcome', 'notifications', 'phone', 'voice', 'beneficiaries'] as const)[currentStep]] === 'completed' ? 'Continue' : 'Mark Complete & Continue'}
         backButtonText="Back"
-        skipButtonText="Skip & Complete Later"
+        skipButtonText="Skip & Finish Setup"
+        skipStepButtonText="Skip This Step"
       />
     </div>
   );

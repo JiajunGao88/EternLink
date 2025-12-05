@@ -26,6 +26,7 @@ interface WizardContainerProps {
   onStepChange: (step: number) => void;
   onComplete: () => void;
   onSkip?: () => void;
+  onSkipStep?: () => void; // Skip just the current step
   onCancel?: () => void;
   allowSkip?: boolean;
   showProgress?: boolean;
@@ -34,6 +35,7 @@ interface WizardContainerProps {
   backButtonText?: string;
   cancelButtonText?: string;
   skipButtonText?: string;
+  skipStepButtonText?: string; // Text for skipping just this step
 }
 
 export const WizardContainer: React.FC<WizardContainerProps> = ({
@@ -42,6 +44,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   onStepChange,
   onComplete,
   onSkip,
+  onSkipStep,
   onCancel,
   allowSkip = false,
   showProgress = true,
@@ -50,6 +53,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   backButtonText = 'Back',
   cancelButtonText = 'Cancel',
   skipButtonText = 'Skip for now',
+  skipStepButtonText = 'Skip This Step',
 }) => {
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -135,32 +139,6 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
     }
   };
 
-  const handleSkip = () => {
-    setValidationError(null);
-
-    // Call onExit hook
-    if (currentStepData.onExit) {
-      currentStepData.onExit();
-    }
-
-    // Skip to next step or call onSkip handler if last step
-    if (isLastStep) {
-      if (onSkip) {
-        onSkip();
-      } else {
-        onComplete();
-      }
-    } else {
-      const nextStep = currentStep + 1;
-      onStepChange(nextStep);
-
-      // Call onEnter hook for next step
-      if (steps[nextStep]?.onEnter) {
-        steps[nextStep].onEnter!();
-      }
-    }
-  };
-
   const stepperSteps: Step[] = steps.map((step) => ({
     id: step.id,
     title: step.title,
@@ -207,13 +185,24 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
 
       {/* Navigation Buttons */}
       <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
-        <div>
+        <div className="flex items-center gap-3">
           {onCancel && (
             <button
               onClick={onCancel}
               className="px-6 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
             >
               {cancelButtonText}
+            </button>
+          )}
+          
+          {/* Skip all remaining - finish setup button */}
+          {allowSkip && onSkip && !isLastStep && (
+            <button
+              onClick={onSkip}
+              disabled={isValidating}
+              className="px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-300 transition-colors disabled:opacity-50"
+            >
+              {skipButtonText}
             </button>
           )}
         </div>
@@ -229,14 +218,16 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
             </button>
           )}
 
-          {/* Show skip button if current step allows it */}
-          {currentStepData.allowStepSkip && (
+          {/* Skip just this step button */}
+          {currentStepData.allowStepSkip && onSkipStep && !isLastStep && (
             <button
-              onClick={handleSkip}
+              onClick={() => {
+                onSkipStep();
+              }}
               disabled={isValidating}
-              className="px-6 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 transition-colors text-yellow-400 hover:text-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {skipButtonText}
+              {skipStepButtonText}
             </button>
           )}
 

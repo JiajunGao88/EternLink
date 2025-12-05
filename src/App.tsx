@@ -54,7 +54,7 @@ function App() {
   const [, setUserAccountType] = useState<'user' | 'beneficiary' | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
-  const [selectedPlan, setSelectedPlan] = useState<'individual' | 'family' | null>(null);
+  const [_selectedPlan, setSelectedPlan] = useState<'individual' | 'family' | null>(null);
   const [contractAddress, setContractAddress] = useState(DEFAULTS.CONTRACT_ADDRESS);
   const [chainId, setChainId] = useState(DEFAULTS.CHAIN_ID);
   const [ipfsCid, setIpfsCid] = useState("");
@@ -107,6 +107,7 @@ function App() {
       <ProductLandingPage
         onTryDemo={() => {
           setShowProductLanding(false);
+          setShowDemo(true);
         }}
         onRegisterBeneficiary={() => {
           setShowProductLanding(false);
@@ -115,10 +116,6 @@ function App() {
         onLogin={() => {
           setShowProductLanding(false);
           setShowLogin(true);
-        }}
-        onRegister={() => {
-          setShowProductLanding(false);
-          setShowRegistration(true);
         }}
       />
     );

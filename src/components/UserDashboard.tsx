@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FrozenOverview } from './FrozenOverview';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 

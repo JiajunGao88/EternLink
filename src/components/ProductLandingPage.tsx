@@ -4,10 +4,9 @@ interface ProductLandingPageProps {
   onTryDemo: () => void;
   onRegisterBeneficiary: () => void;
   onLogin: () => void;
-  onRegister: () => void;
 }
 
-export default function ProductLandingPage({ onTryDemo, onLogin, onRegister }: ProductLandingPageProps) {
+export default function ProductLandingPage({ onTryDemo, onLogin }: ProductLandingPageProps) {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -73,15 +72,9 @@ export default function ProductLandingPage({ onTryDemo, onLogin, onRegister }: P
               </button>
               <button
                 onClick={onLogin}
-                className="px-4 py-2 border border-[#C0C8D4]/30 text-[#C0C8D4] hover:bg-[#C0C8D4]/10 hover:border-[#C0C8D4]/50 rounded-lg transition-all"
-              >
-                Login
-              </button>
-              <button
-                onClick={onTryDemo}
                 className="px-6 py-2 bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-[#3DA288]/30 transition-all"
               >
-                Try Demo
+                Get Started Free
               </button>
             </div>
           </div>
@@ -123,7 +116,7 @@ export default function ProductLandingPage({ onTryDemo, onLogin, onRegister }: P
 
             <div className="flex flex-col sm:flex-row gap-4">
               <button
-                onClick={onTryDemo}
+                onClick={onLogin}
                 className="px-8 py-4 bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3DA288]/30 transition-all transform hover:scale-105"
               >
                 Get Started Free
@@ -686,10 +679,38 @@ export default function ProductLandingPage({ onTryDemo, onLogin, onRegister }: P
               Try EternLink for free. No credit card required.
             </p>
             <button
-              onClick={onRegister}
+              onClick={onLogin}
               className="px-12 py-4 bg-gradient-to-r from-[#3DA288] to-[#2d8a6f] text-white text-lg font-semibold rounded-xl hover:shadow-lg hover:shadow-[#3DA288]/30 transition-all transform hover:scale-105"
             >
               Get Started Free
+            </button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Try Demo Section */}
+      <section className="py-20 px-6 bg-[#1a2942]/30">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              <span className="bg-gradient-to-r from-[#C0C8D4] to-[#3DA288] bg-clip-text text-transparent">
+                See How Our Core Features Work
+              </span>
+            </h2>
+            <p className="text-lg text-[#8b96a8] mb-8 max-w-2xl mx-auto">
+              Experience a live demonstration of EternLink's key recovery process and see how our zero-knowledge security protects your digital assets.
+            </p>
+            <button
+              onClick={onTryDemo}
+              className="px-10 py-4 bg-[#1a2942] border-2 border-[#3DA288] text-[#3DA288] text-lg font-semibold rounded-xl hover:bg-[#3DA288] hover:text-white transition-all transform hover:scale-105"
+            >
+              Try Demo
             </button>
           </motion.div>
         </div>

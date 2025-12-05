@@ -28,9 +28,8 @@ interface OnboardingData {
 }
 
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
-  onComplete,
-  onSkip,
   userName,
+  // onComplete and onSkip are intentionally not destructured as we use window.location.reload() instead
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({});

@@ -15,11 +15,11 @@ interface Beneficiary {
 }
 
 interface BeneficiaryStepProps {
-  onComplete: (beneficiaries: Beneficiary[]) => void;
+  onComplete?: (beneficiaries: Beneficiary[]) => void;
   onChange?: (beneficiaries: Beneficiary[]) => void;
 }
 
-export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onComplete, onChange }) => {
+export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onChange }) => {
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -147,10 +147,6 @@ export const BeneficiaryStep: React.FC<BeneficiaryStepProps> = ({ onComplete, on
     }
   };
 
-  const handleComplete = () => {
-    // Allow completing without beneficiaries
-    onComplete(beneficiaries);
-  };
 
   const copyReferCode = (code: string) => {
     navigator.clipboard.writeText(code);

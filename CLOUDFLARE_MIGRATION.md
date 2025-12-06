@@ -22,7 +22,7 @@
   - beneficiary_links, death_claims, death_verification_events
   - death_claim_notifications, encrypted_files
 
-### Phase 2: API 迁移
+### Phase 2: API
 - [x] 创建新的 Workers 项目结构 `workers-api/`
 - [x] 使用 Hono 框架（轻量、适合 Workers）
 - [x] 使用 Drizzle ORM（替代 Prisma）

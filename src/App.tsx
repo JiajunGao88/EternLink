@@ -854,6 +854,8 @@ function App() {
               setCopiedShare1(false); 
               setCopiedShare2(false);
               setSharesSaved(false);
+              setTxHash('');
+              setFileHash('');
             }}
             className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all ${
               appMode === 'encrypt'

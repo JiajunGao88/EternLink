@@ -752,8 +752,25 @@ function App() {
       >
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
+            {/* Logo - Clickable */}
+            <button
+              onClick={() => {
+                const token = localStorage.getItem('authToken');
+                const accountType = localStorage.getItem('accountType');
+                if (token && accountType) {
+                  // Logged in - go to dashboard
+                  if (accountType === 'beneficiary') {
+                    setShowBeneficiaryDashboard(true);
+                  } else {
+                    setShowUserDashboard(true);
+                  }
+                } else {
+                  // Not logged in - go to homepage
+                  setShowProductLanding(true);
+                }
+              }}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            >
               <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
                 <path
                   d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
@@ -775,7 +792,7 @@ function App() {
               <span className="text-2xl font-bold bg-gradient-to-r from-[#C0C8D4] to-[#3DA288] bg-clip-text text-transparent">
                 EternLink
               </span>
-            </div>
+            </button>
 
             {/* Nav Buttons */}
             <div className="flex items-center gap-4">

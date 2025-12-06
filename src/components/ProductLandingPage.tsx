@@ -36,8 +36,17 @@ export default function ProductLandingPage({
       >
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
+            {/* Logo - Clickable */}
+            <button
+              onClick={() => {
+                if (isLoggedIn && onDashboard) {
+                  onDashboard();
+                } else {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            >
               <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
                 <path
                   d="M24 4L8 12V22C8 31 14 39 24 44C34 39 40 31 40 22V12L24 4Z"
@@ -59,7 +68,7 @@ export default function ProductLandingPage({
               <span className="text-2xl font-bold bg-gradient-to-r from-[#C0C8D4] to-[#3DA288] bg-clip-text text-transparent">
                 EternLink
               </span>
-            </div>
+            </button>
 
             {/* Nav Links */}
             <div className="hidden md:flex items-center gap-8">

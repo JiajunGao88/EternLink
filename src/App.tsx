@@ -742,8 +742,11 @@ function App() {
           type: "success",
           message: "✓ File exists on blockchain",
         });
-        const scanUrl = `https://sepolia.basescan.org/search?f=0&q=${encodeURIComponent(hashHex)}`;
-        window.open(scanUrl, '_blank', 'noopener,noreferrer');
+        // Prefer the transaction hash link if available (same as tx hash link shown below)
+        const explorerLink = txHash
+          ? `${EXPLORER_URL}/tx/${txHash}`
+          : `${EXPLORER_URL}/search?f=0&q=${encodeURIComponent(hashHex)}`;
+        window.open(explorerLink, '_blank', 'noopener,noreferrer');
       } else {
         setStatus({
           type: "info",

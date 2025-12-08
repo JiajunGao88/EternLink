@@ -72,6 +72,16 @@ export default function FilePickerModal({ isOpen, onClose, onFileSelected }: Fil
     });
   };
 
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const getFileIcon = (name: string) => {
     const ext = name.split('.').pop()?.toLowerCase();
     const iconMap: Record<string, string> = {
@@ -181,7 +191,12 @@ export default function FilePickerModal({ isOpen, onClose, onFileSelected }: Fil
                           )}
                         </div>
                       </div>
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 flex items-center gap-3">
+                        {file.lastDecryptedAt && (
+                          <span className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-1 whitespace-nowrap">
+                            Decrypted · {formatDateTime(file.lastDecryptedAt)}
+                          </span>
+                        )}
                         {downloading === file.fileHash ? (
                           <svg className="animate-spin h-6 w-6 text-[#3DA288]" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />

@@ -56,9 +56,10 @@ interface UserDashboardProps {
   onLogout: () => void;
   onTryDemo?: () => void;
   onBuyPlan?: () => void; // Callback to trigger plan purchase/onboarding
+  decryptedAtMap?: Record<string, string>;
 }
 
-export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDashboardProps) {
+export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan, decryptedAtMap }: UserDashboardProps) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [linkedBeneficiaries, setLinkedBeneficiaries] = useState<LinkedBeneficiary[]>([]);
   const [heartbeatStatus, setHeartbeatStatus] = useState<HeartbeatStatus | null>(null);
@@ -685,7 +686,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
             transition={{ duration: 0.3 }}
           >
             <div style={styles.card}>
-              <YourFilesTab />
+              <YourFilesTab decryptedAtMap={decryptedAtMap} />
             </div>
           </motion.div>
         )}

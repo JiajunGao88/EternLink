@@ -76,7 +76,8 @@ function App() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [fileHash, setFileHash] = useState<string>("");
-  const [txHash, setTxHash] = useState<string>("");
+const [txHash, setTxHash] = useState<string>("");
+const [decryptedAtMap, setDecryptedAtMap] = useState<Record<string, string>>({});
   
   // SSS shares state
   const [keyShares, setKeyShares] = useState<KeyShares | null>(null);
@@ -377,6 +378,7 @@ function App() {
           setShowUserDashboard(false);
           setShowPlanSelection(true);
         }}
+        decryptedAtMap={decryptedAtMap}
       />
     );
   }
@@ -631,9 +633,19 @@ function App() {
       // Mark file as decrypted in database (if logged in and file hash available)
       const token = localStorage.getItem('authToken');
       if (token && decryptFileHash) {
-        markFileDecrypted(decryptFileHash.trim()).catch(err => {
-          console.warn('Failed to mark file as decrypted:', err);
-        });
+        const res = await markFileDecrypted(decryptFileHash.trim());
+        if (res.success && res.lastDecryptedAt) {
+          setDecryptedAtMap((prev) => ({
+            ...prev,
+            [decryptFileHash.trim()]: res.lastDecryptedAt as string,
+          }));
+          if (selectedServerFile) {
+            setSelectedServerFile({
+              ...selectedServerFile,
+              lastDecryptedAt: res.lastDecryptedAt,
+            });
+          }
+        }
       }
 
       setStatus({
@@ -695,9 +707,19 @@ function App() {
       const token = localStorage.getItem('authToken');
       const fileHashToMark = selectedServerFile?.fileHash || decryptFileHash?.trim();
       if (token && fileHashToMark) {
-        markFileDecrypted(fileHashToMark).catch(err => {
-          console.warn('Failed to mark file as decrypted:', err);
-        });
+        const res = await markFileDecrypted(fileHashToMark);
+        if (res.success && res.lastDecryptedAt) {
+          setDecryptedAtMap((prev) => ({
+            ...prev,
+            [fileHashToMark]: res.lastDecryptedAt as string,
+          }));
+          if (selectedServerFile && selectedServerFile.fileHash === fileHashToMark) {
+            setSelectedServerFile({
+              ...selectedServerFile,
+              lastDecryptedAt: res.lastDecryptedAt,
+            });
+          }
+        }
       }
 
       setStatus({

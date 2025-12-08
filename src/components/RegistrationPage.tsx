@@ -59,8 +59,8 @@ export default function RegistrationPage({
       const endpoint = `${API_URL}/auth/register`;
 
       const body = accountType === 'user'
-        ? { email, password }
-        : { email, password, referCode: referCode.toUpperCase() };
+        ? { email, password, accountType: 'user' }
+        : { email, password, referCode: referCode.toUpperCase(), accountType: 'beneficiary' };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -77,8 +77,14 @@ export default function RegistrationPage({
       }
 
       if (accountType === 'beneficiary') {
-        setLinkedUser(data.linkedUser);
-        setSuccess(`Registration successful! You are now linked to user: ${data.linkedUser.email}. Please check your email for verification code.`);
+        const linkedEmail = data.linkedUser?.email;
+        if (linkedEmail) {
+          setLinkedUser({ id: data.linkedUser.id ?? '', email: linkedEmail });
+          setSuccess(`Registration successful! You are now linked to user: ${linkedEmail}. Please check your email for verification code.`);
+        } else {
+          setLinkedUser(null);
+          setSuccess('Registration successful! Please check your email for verification code.');
+        }
       } else {
         setSuccess('Registration successful! Please check your email for verification code.');
       }

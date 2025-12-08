@@ -801,6 +801,7 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 0.3s ease',
     backdropFilter: 'blur(10px)',
     outline: 'none',
+    boxShadow: 'none',
   },
   activeTab: {
     background: 'rgba(61, 162, 136, 0.2)',

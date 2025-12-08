@@ -318,9 +318,11 @@ authRoutes.post('/login', zValidator('json', loginSchema), async (c) => {
       });
     }
 
-    // Update last login
+    // Update last login (capture previous for response)
+    const previousLastLoginAt = user.lastLoginAt;
+    const now = new Date();
     await db.update(users)
-      .set({ lastLoginAt: new Date(), updatedAt: new Date() })
+      .set({ lastLoginAt: now, updatedAt: now })
       .where(eq(users.id, user.id));
 
     // Record login history
@@ -355,6 +357,7 @@ authRoutes.post('/login', zValidator('json', loginSchema), async (c) => {
         referCode: user.referCode,
         subscriptionActive: user.subscriptionActive,
         onboardingCompleted: user.onboardingCompleted,
+        lastLoginAt: previousLastLoginAt || now,
       },
     });
   } catch (error) {

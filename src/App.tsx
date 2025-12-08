@@ -742,6 +742,8 @@ function App() {
           type: "success",
           message: "✓ File exists on blockchain",
         });
+        const scanUrl = `https://sepolia.basescan.org/search?f=0&q=${encodeURIComponent(hashHex)}`;
+        window.open(scanUrl, '_blank', 'noopener,noreferrer');
       } else {
         setStatus({
           type: "info",

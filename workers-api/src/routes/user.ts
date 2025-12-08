@@ -62,6 +62,7 @@ userRoutes.get('/profile', async (c) => {
         freezeDays: user.freezeDays,
         twoFactorEnabled: user.twoFactorEnabled,
         createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
       },
     });
   } catch (error) {
@@ -320,6 +321,7 @@ userRoutes.get('/me', async (c) => {
         onboardingCompleted: user.onboardingCompleted,
         twoFactorEnabled: user.twoFactorEnabled,
         createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
       },
     });
   } catch (error) {

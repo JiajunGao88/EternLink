@@ -170,10 +170,15 @@ export default function FilePickerModal({ isOpen, onClose, onFileSelected }: Fil
                         <h4 className="text-white font-medium truncate group-hover:text-[#3DA288] transition-colors">
                           {file.originalName}
                         </h4>
-                        <div className="flex items-center gap-3 text-sm text-[#8b96a8] mt-1">
+                        <div className="flex items-center gap-3 text-sm text-[#8b96a8] mt-1 flex-wrap">
                           <span>{formatFileSize(file.encryptedSize)}</span>
                           <span>•</span>
                           <span>{formatDate(file.createdAt)}</span>
+                          {file.lastDecryptedAt && (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-xs border border-amber-500/30">
+                              Decrypted
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex-shrink-0">

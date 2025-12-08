@@ -148,7 +148,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-              notificationConfig: onboardingData.notificationConfig,
+              // flatten notification config for backend
+              emailNotificationDays: onboardingData.notificationConfig?.emailNotificationDays,
+              phoneNotificationDays: onboardingData.notificationConfig?.phoneNotificationDays,
+              freezeDays: onboardingData.notificationConfig?.accountFreezeDays,
               completedSteps,
               skippedSteps,
               phoneVerified: stepStatus.phone === 'completed',
@@ -235,7 +238,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-              notificationConfig: onboardingData.notificationConfig,
+              emailNotificationDays: onboardingData.notificationConfig?.emailNotificationDays,
+              phoneNotificationDays: onboardingData.notificationConfig?.phoneNotificationDays,
+              freezeDays: onboardingData.notificationConfig?.accountFreezeDays,
               completedSteps,
               skippedSteps,
               phoneVerified: finalStatus.phone === 'completed',

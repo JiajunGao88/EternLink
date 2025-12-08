@@ -630,22 +630,23 @@ const [decryptedAtMap, setDecryptedAtMap] = useState<Record<string, string>>({})
       const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
 
-      // Mark file as decrypted in database (if logged in and file hash available)
+      // Mark file as decrypted (optimistic update)
       const token = localStorage.getItem('authToken');
       if (token && decryptFileHash) {
-        const res = await markFileDecrypted(decryptFileHash.trim());
-        if (res.success && res.lastDecryptedAt) {
-          setDecryptedAtMap((prev) => ({
-            ...prev,
-            [decryptFileHash.trim()]: res.lastDecryptedAt as string,
-          }));
-          if (selectedServerFile) {
-            setSelectedServerFile({
-              ...selectedServerFile,
-              lastDecryptedAt: res.lastDecryptedAt,
-            });
-          }
+        const nowIso = new Date().toISOString();
+        setDecryptedAtMap((prev) => ({
+          ...prev,
+          [decryptFileHash.trim()]: nowIso,
+        }));
+        if (selectedServerFile) {
+          setSelectedServerFile({
+            ...selectedServerFile,
+            lastDecryptedAt: nowIso,
+          });
         }
+        markFileDecrypted(decryptFileHash.trim()).catch(err => {
+          console.warn('Failed to mark file as decrypted:', err);
+        });
       }
 
       setStatus({
@@ -703,23 +704,24 @@ const [decryptedAtMap, setDecryptedAtMap] = useState<Record<string, string>>({})
       const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
 
-      // Mark file as decrypted in database (if logged in and file hash available)
+      // Mark file as decrypted (optimistic update)
       const token = localStorage.getItem('authToken');
       const fileHashToMark = selectedServerFile?.fileHash || decryptFileHash?.trim();
       if (token && fileHashToMark) {
-        const res = await markFileDecrypted(fileHashToMark);
-        if (res.success && res.lastDecryptedAt) {
-          setDecryptedAtMap((prev) => ({
-            ...prev,
-            [fileHashToMark]: res.lastDecryptedAt as string,
-          }));
-          if (selectedServerFile && selectedServerFile.fileHash === fileHashToMark) {
-            setSelectedServerFile({
-              ...selectedServerFile,
-              lastDecryptedAt: res.lastDecryptedAt,
-            });
-          }
+        const nowIso = new Date().toISOString();
+        setDecryptedAtMap((prev) => ({
+          ...prev,
+          [fileHashToMark]: nowIso,
+        }));
+        if (selectedServerFile && selectedServerFile.fileHash === fileHashToMark) {
+          setSelectedServerFile({
+            ...selectedServerFile,
+            lastDecryptedAt: nowIso,
+          });
         }
+        markFileDecrypted(fileHashToMark).catch(err => {
+          console.warn('Failed to mark file as decrypted:', err);
+        });
       }
 
       setStatus({

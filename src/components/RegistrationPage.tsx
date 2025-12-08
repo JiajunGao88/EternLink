@@ -7,13 +7,13 @@ const API_URL = `${API_BASE_URL}/api`;
 
 interface RegistrationPageProps {
   onRegistrationComplete: (token: string, accountType: 'user' | 'beneficiary', user?: { email: string; name?: string }) => void;
-  onBackToHome: () => void;
+  onBackToLogin: () => void;
   onLoginClick: () => void;
 }
 
 export default function RegistrationPage({
   onRegistrationComplete,
-  onBackToHome,
+  onBackToLogin,
   onLoginClick
 }: RegistrationPageProps) {
   const [step, setStep] = useState<'selectType' | 'register' | 'verify'>('selectType');
@@ -159,13 +159,13 @@ export default function RegistrationPage({
         className="max-w-md w-full"
       >
         <button
-          onClick={onBackToHome}
+          onClick={onBackToLogin}
           className="mb-6 flex items-center text-[#C0C8D4] hover:text-white transition-colors"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Home
+          Back to Login
         </button>
 
         <div className="text-center mb-8">

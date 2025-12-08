@@ -47,6 +47,7 @@ fileRoutes.get('/', async (c) => {
         encryptedSize: f.encryptedSize,
         mimeType: f.mimeType,
         blockchainTxHash: f.blockchainTxHash,
+        lastDecryptedAt: f.lastDecryptedAt,
         createdAt: f.createdAt,
       })),
     });
@@ -180,6 +181,43 @@ fileRoutes.get('/download/:fileHash', async (c) => {
   } catch (error) {
     console.error('Download file error:', error);
     return c.json({ success: false, error: 'Failed to download file' }, 500);
+  }
+});
+
+// Mark file as decrypted (update lastDecryptedAt timestamp)
+fileRoutes.post('/mark-decrypted/:fileHash', async (c) => {
+  const userId = c.get('userId');
+  const fileHash = c.req.param('fileHash');
+  const db = createDb(c.env.DB);
+
+  try {
+    // Find file metadata
+    const fileRecord = await db.query.encryptedFiles.findFirst({
+      where: eq(encryptedFiles.fileHash, fileHash),
+    });
+
+    if (!fileRecord) {
+      return c.json({ success: false, error: 'File not found' }, 404);
+    }
+
+    // Check ownership
+    if (fileRecord.userId !== userId) {
+      return c.json({ success: false, error: 'Access denied' }, 403);
+    }
+
+    // Update lastDecryptedAt
+    await db.update(encryptedFiles)
+      .set({ lastDecryptedAt: new Date() })
+      .where(eq(encryptedFiles.id, fileRecord.id));
+
+    return c.json({
+      success: true,
+      message: 'File marked as decrypted',
+      lastDecryptedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Mark decrypted error:', error);
+    return c.json({ success: false, error: 'Failed to update file' }, 500);
   }
 });
 

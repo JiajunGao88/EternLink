@@ -14,7 +14,7 @@ import {
 } from "./utils/crypto";
 import { splitKey, reconstructKey, type KeyShares } from "./utils/secretSharing";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
-import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain, uploadEncryptedFile, EncryptedFileInfo } from "./utils/api";
+import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain, uploadEncryptedFile, markFileDecrypted, EncryptedFileInfo } from "./utils/api";
 import FilePickerModal from "./components/FilePickerModal";
 import ProductLandingPage from "./components/ProductLandingPage";
 import BeneficiaryRegistrationPage from "./components/BeneficiaryRegistrationPage";
@@ -262,9 +262,9 @@ function App() {
             setShowOnboarding(true);
           }
         }}
-        onBackToHome={() => {
+        onBackToLogin={() => {
           setShowRegistration(false);
-          setShowProductLanding(true);
+          setShowLogin(true);
         }}
         onLoginClick={() => {
           setShowRegistration(false);
@@ -628,6 +628,14 @@ function App() {
       const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
 
+      // Mark file as decrypted in database (if logged in and file hash available)
+      const token = localStorage.getItem('authToken');
+      if (token && decryptFileHash) {
+        markFileDecrypted(decryptFileHash.trim()).catch(err => {
+          console.warn('Failed to mark file as decrypted:', err);
+        });
+      }
+
       setStatus({
         type: "success",
         message: `File decrypted successfully! Downloaded as: ${originalName}`,
@@ -682,6 +690,15 @@ function App() {
       const mimeType = selectedServerFile?.mimeType || 'application/octet-stream';
       const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
+
+      // Mark file as decrypted in database (if logged in and file hash available)
+      const token = localStorage.getItem('authToken');
+      const fileHashToMark = selectedServerFile?.fileHash || decryptFileHash?.trim();
+      if (token && fileHashToMark) {
+        markFileDecrypted(fileHashToMark).catch(err => {
+          console.warn('Failed to mark file as decrypted:', err);
+        });
+      }
 
       setStatus({
         type: "success",

@@ -172,6 +172,7 @@ export interface EncryptedFileInfo {
   encryptedSize: number;
   mimeType?: string;
   blockchainTxHash?: string;
+  lastDecryptedAt?: string;
   createdAt: string;
 }
 
@@ -328,6 +329,44 @@ export async function deleteEncryptedFile(
     }
 
     return { success: true };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: 'Network error. Please try again',
+    };
+  }
+}
+
+/**
+ * Mark file as decrypted (update lastDecryptedAt timestamp)
+ */
+export async function markFileDecrypted(
+  fileHash: string
+): Promise<{ success: boolean; lastDecryptedAt?: string; error?: string }> {
+  try {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/files/mark-decrypted/${fileHash}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to mark file as decrypted',
+      };
+    }
+
+    return { success: true, lastDecryptedAt: data.lastDecryptedAt };
   } catch (error: any) {
     return {
       success: false,

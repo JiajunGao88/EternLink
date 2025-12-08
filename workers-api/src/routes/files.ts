@@ -4,7 +4,7 @@
 
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
-import { createDb, users, encryptedFiles } from '../db';
+import { createDb, users, encryptedFiles, beneficiaryLinks } from '../db';
 import { verifyToken } from '../utils/auth';
 import type { Env } from '../types';
 
@@ -200,20 +200,33 @@ fileRoutes.post('/mark-decrypted/:fileHash', async (c) => {
       return c.json({ success: false, error: 'File not found' }, 404);
     }
 
-    // Check ownership
-    if (fileRecord.userId !== userId) {
+    // Access check: owner or linked beneficiary
+    let allowed = fileRecord.userId === userId;
+    if (!allowed) {
+      const link = await db.query.beneficiaryLinks.findFirst({
+        where: and(
+          eq(beneficiaryLinks.beneficiaryId, userId),
+          eq(beneficiaryLinks.userId, fileRecord.userId),
+          eq(beneficiaryLinks.status, 'active')
+        ),
+      });
+      if (link) allowed = true;
+    }
+
+    if (!allowed) {
       return c.json({ success: false, error: 'Access denied' }, 403);
     }
 
     // Update lastDecryptedAt
+    const now = new Date();
     await db.update(encryptedFiles)
-      .set({ lastDecryptedAt: new Date() })
+      .set({ lastDecryptedAt: now })
       .where(eq(encryptedFiles.id, fileRecord.id));
 
     return c.json({
       success: true,
       message: 'File marked as decrypted',
-      lastDecryptedAt: new Date().toISOString(),
+      lastDecryptedAt: now.toISOString(),
     });
   } catch (error) {
     console.error('Mark decrypted error:', error);

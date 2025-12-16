@@ -199,6 +199,7 @@ export const encryptedFiles = sqliteTable('encrypted_files', {
   encryptedSize: integer('encrypted_size').notNull(), // bytes
   mimeType: text('mime_type'),
   blockchainTxHash: text('blockchain_tx_hash'), // If registered on chain
+  lastDecryptedAt: integer('last_decrypted_at', { mode: 'timestamp' }), // Last time file was decrypted
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()).notNull(),
 }, (table) => ({
   userIdIdx: index('encrypted_files_user_id_idx').on(table.userId),

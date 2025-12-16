@@ -14,7 +14,7 @@ import {
 } from "./utils/crypto";
 import { splitKey, reconstructKey, type KeyShares } from "./utils/secretSharing";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
-import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain, uploadEncryptedFile, EncryptedFileInfo } from "./utils/api";
+import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain, uploadEncryptedFile, markFileDecrypted, EncryptedFileInfo } from "./utils/api";
 import FilePickerModal from "./components/FilePickerModal";
 import ProductLandingPage from "./components/ProductLandingPage";
 import BeneficiaryRegistrationPage from "./components/BeneficiaryRegistrationPage";
@@ -76,7 +76,8 @@ function App() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [fileHash, setFileHash] = useState<string>("");
-  const [txHash, setTxHash] = useState<string>("");
+const [txHash, setTxHash] = useState<string>("");
+const [decryptedAtMap, setDecryptedAtMap] = useState<Record<string, string>>({});
   
   // SSS shares state
   const [keyShares, setKeyShares] = useState<KeyShares | null>(null);
@@ -262,9 +263,9 @@ function App() {
             setShowOnboarding(true);
           }
         }}
-        onBackToHome={() => {
+        onBackToLogin={() => {
           setShowRegistration(false);
-          setShowProductLanding(true);
+          setShowLogin(true);
         }}
         onLoginClick={() => {
           setShowRegistration(false);
@@ -377,6 +378,7 @@ function App() {
           setShowUserDashboard(false);
           setShowPlanSelection(true);
         }}
+        decryptedAtMap={decryptedAtMap}
       />
     );
   }
@@ -628,6 +630,25 @@ function App() {
       const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
 
+      // Mark file as decrypted (optimistic update)
+      const token = localStorage.getItem('authToken');
+      if (token && decryptFileHash) {
+        const nowIso = new Date().toISOString();
+        setDecryptedAtMap((prev) => ({
+          ...prev,
+          [decryptFileHash.trim()]: nowIso,
+        }));
+        if (selectedServerFile) {
+          setSelectedServerFile({
+            ...selectedServerFile,
+            lastDecryptedAt: nowIso,
+          });
+        }
+        markFileDecrypted(decryptFileHash.trim()).catch(err => {
+          console.warn('Failed to mark file as decrypted:', err);
+        });
+      }
+
       setStatus({
         type: "success",
         message: `File decrypted successfully! Downloaded as: ${originalName}`,
@@ -683,6 +704,26 @@ function App() {
       const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
 
+      // Mark file as decrypted (optimistic update)
+      const token = localStorage.getItem('authToken');
+      const fileHashToMark = selectedServerFile?.fileHash || decryptFileHash?.trim();
+      if (token && fileHashToMark) {
+        const nowIso = new Date().toISOString();
+        setDecryptedAtMap((prev) => ({
+          ...prev,
+          [fileHashToMark]: nowIso,
+        }));
+        if (selectedServerFile && selectedServerFile.fileHash === fileHashToMark) {
+          setSelectedServerFile({
+            ...selectedServerFile,
+            lastDecryptedAt: nowIso,
+          });
+        }
+        markFileDecrypted(fileHashToMark).catch(err => {
+          console.warn('Failed to mark file as decrypted:', err);
+        });
+      }
+
       setStatus({
         type: "success",
         message: `File decrypted successfully! Downloaded as: ${originalName}`,
@@ -725,6 +766,11 @@ function App() {
           type: "success",
           message: "✓ File exists on blockchain",
         });
+        // Prefer the transaction hash link if available (same as tx hash link shown below)
+        const explorerLink = txHash
+          ? `${EXPLORER_URL}/tx/${txHash}`
+          : `${EXPLORER_URL}/search?f=0&q=${encodeURIComponent(hashHex)}`;
+        window.open(explorerLink, '_blank', 'noopener,noreferrer');
       } else {
         setStatus({
           type: "info",

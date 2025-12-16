@@ -56,6 +56,7 @@ export default function BeneficiaryRegistrationPage({
         body: JSON.stringify({
           email,
           password,
+          accountType: 'beneficiary',
           referCode: referCode.toUpperCase(),
         }),
       });
@@ -66,8 +67,14 @@ export default function BeneficiaryRegistrationPage({
         throw new Error(data.error || 'Registration failed');
       }
 
-      setLinkedUser(data.linkedUser);
-      setSuccess(`Registration successful! You are now linked to user: ${data.linkedUser.email}. Please check your email for verification code.`);
+      const linkedEmail = data.linkedUser?.email;
+      if (linkedEmail) {
+        setLinkedUser({ id: data.linkedUser.id ?? '', email: linkedEmail });
+        setSuccess(`Registration successful! You are now linked to user: ${linkedEmail}. Please check your email for verification code.`);
+      } else {
+        setLinkedUser(null);
+        setSuccess('Registration successful! Please check your email for verification code.');
+      }
       setStep('verify');
     } catch (err: any) {
       setError(err.message || 'Failed to register');

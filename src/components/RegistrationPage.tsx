@@ -7,13 +7,13 @@ const API_URL = `${API_BASE_URL}/api`;
 
 interface RegistrationPageProps {
   onRegistrationComplete: (token: string, accountType: 'user' | 'beneficiary', user?: { email: string; name?: string }) => void;
-  onBackToHome: () => void;
+  onBackToLogin: () => void;
   onLoginClick: () => void;
 }
 
 export default function RegistrationPage({
   onRegistrationComplete,
-  onBackToHome,
+  onBackToLogin,
   onLoginClick
 }: RegistrationPageProps) {
   const [step, setStep] = useState<'selectType' | 'register' | 'verify'>('selectType');
@@ -59,8 +59,8 @@ export default function RegistrationPage({
       const endpoint = `${API_URL}/auth/register`;
 
       const body = accountType === 'user'
-        ? { email, password }
-        : { email, password, referCode: referCode.toUpperCase() };
+        ? { email, password, accountType: 'user' }
+        : { email, password, referCode: referCode.toUpperCase(), accountType: 'beneficiary' };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -77,8 +77,14 @@ export default function RegistrationPage({
       }
 
       if (accountType === 'beneficiary') {
-        setLinkedUser(data.linkedUser);
-        setSuccess(`Registration successful! You are now linked to user: ${data.linkedUser.email}. Please check your email for verification code.`);
+        const linkedEmail = data.linkedUser?.email;
+        if (linkedEmail) {
+          setLinkedUser({ id: data.linkedUser.id ?? '', email: linkedEmail });
+          setSuccess(`Registration successful! You are now linked to user: ${linkedEmail}. Please check your email for verification code.`);
+        } else {
+          setLinkedUser(null);
+          setSuccess('Registration successful! Please check your email for verification code.');
+        }
       } else {
         setSuccess('Registration successful! Please check your email for verification code.');
       }
@@ -159,13 +165,13 @@ export default function RegistrationPage({
         className="max-w-md w-full"
       >
         <button
-          onClick={onBackToHome}
+          onClick={onBackToLogin}
           className="mb-6 flex items-center text-[#C0C8D4] hover:text-white transition-colors"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Home
+          Back to Login
         </button>
 
         <div className="text-center mb-8">

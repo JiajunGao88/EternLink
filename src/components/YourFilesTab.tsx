@@ -10,10 +10,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { listEncryptedFiles, deleteEncryptedFile, EncryptedFileInfo } from '../utils/api';
 
 interface YourFilesTabProps {
-  onDecryptFile?: (fileHash: string) => void;
+  decryptedAtMap?: Record<string, string>;
 }
 
-export default function YourFilesTab({ onDecryptFile }: YourFilesTabProps) {
+export default function YourFilesTab({ decryptedAtMap }: YourFilesTabProps) {
   const [files, setFiles] = useState<EncryptedFileInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -179,10 +179,22 @@ export default function YourFilesTab({ onDecryptFile }: YourFilesTabProps) {
                   <h4 className="text-white font-medium truncate" title={file.originalName}>
                     {file.originalName}
                   </h4>
-                  <div className="flex items-center gap-4 text-sm text-[#8b96a8] mt-1">
+                  <div className="flex items-center gap-4 text-sm text-[#8b96a8] mt-1 flex-wrap">
                     <span>{formatFileSize(file.encryptedSize)}</span>
                     <span>•</span>
-                    <span>{formatDate(file.createdAt)}</span>
+                    <span>Uploaded: {formatDate(file.createdAt)}</span>
+                    {(() => {
+                      const lastDecrypted = decryptedAtMap?.[file.fileHash] || file.lastDecryptedAt;
+                      if (lastDecrypted) {
+                        return (
+                          <>
+                            <span>•</span>
+                            <span>Decrypted: {formatDate(lastDecrypted)}</span>
+                          </>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                   <div className="text-xs text-[#8b96a8]/60 mt-1 font-mono truncate" title={file.fileHash}>
                     Hash: {file.fileHash.substring(0, 16)}...
@@ -191,17 +203,6 @@ export default function YourFilesTab({ onDecryptFile }: YourFilesTabProps) {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {onDecryptFile && (
-                    <button
-                      onClick={() => onDecryptFile(file.fileHash)}
-                      className="p-2 text-[#3DA288] hover:bg-[#3DA288]/20 rounded-lg transition-colors"
-                      title="Decrypt this file"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                  )}
                   <button
                     onClick={() => handleDelete(file.fileHash)}
                     disabled={deletingId === file.fileHash}
@@ -222,17 +223,41 @@ export default function YourFilesTab({ onDecryptFile }: YourFilesTabProps) {
                 </div>
               </div>
 
-              {/* Blockchain verification badge */}
-              {file.blockchainTxHash && (
-                <div className="mt-3 pt-3 border-t border-[#C0C8D4]/10">
-                  <div className="flex items-center gap-2 text-xs text-[#3DA288]">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                    <span>Verified on blockchain</span>
-                  </div>
+                {/* Status badges */}
+                <div className="mt-3 pt-3 border-t border-[#C0C8D4]/10 flex flex-wrap gap-3">
+                  {/* Blockchain verification badge */}
+                  {file.blockchainTxHash && (
+                    <div className="flex items-center gap-2 text-xs text-[#3DA288]">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      <span>Verified on blockchain</span>
+                    </div>
+                  )}
+                  
+                  {/* Last decrypted badge */}
+                  {(() => {
+                    const lastDecrypted = decryptedAtMap?.[file.fileHash] || file.lastDecryptedAt;
+                    if (lastDecrypted) {
+                      return (
+                        <div className="flex items-center gap-2 text-xs text-amber-400">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                          </svg>
+                          <span>Last decrypted: {formatDate(lastDecrypted)}</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="flex items-center gap-2 text-xs text-[#8b96a8]">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Not decrypted yet</span>
+                      </div>
+                    );
+                  })()}
                 </div>
-              )}
             </motion.div>
           ))}
         </AnimatePresence>

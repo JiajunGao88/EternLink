@@ -1,13 +1,15 @@
 /**
  * FilePickerModal Component
- * 
- * Modal for selecting encrypted files from user's server storage.
+ *
+ * Modal for selecting encrypted files from user's server storage or local upload.
  * Used in decrypt mode to pick files without downloading locally.
+ * Supports demo mode for non-authenticated users to upload local .enc files.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { listEncryptedFiles, downloadEncryptedFile, EncryptedFileInfo } from '../utils/api';
+import { extractFileHashFromEncFile } from '../utils/crypto';
 
 interface FilePickerModalProps {
   isOpen: boolean;
@@ -20,26 +22,78 @@ export default function FilePickerModal({ isOpen, onClose, onFileSelected }: Fil
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [uploadingLocal, setUploadingLocal] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      loadFiles();
+      const token = localStorage.getItem('authToken');
+      setIsLoggedIn(!!token);
+      if (token) {
+        loadFiles();
+      } else {
+        setLoading(false);
+      }
     }
   }, [isOpen]);
 
   const loadFiles = async () => {
     setLoading(true);
     setError(null);
-    
+
     const result = await listEncryptedFiles();
-    
+
     if (result.success && result.files) {
       setFiles(result.files);
     } else {
       setError(result.error || 'Failed to load files');
     }
-    
+
     setLoading(false);
+  };
+
+  // Handle local file upload for demo mode
+  const handleLocalFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate it's a .enc file
+    if (!file.name.endsWith('.enc')) {
+      setError('Please select a valid .enc encrypted file');
+      return;
+    }
+
+    setUploadingLocal(true);
+    setError(null);
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+
+      // Try to extract file hash from the .enc file
+      const extractedHash = extractFileHashFromEncFile(arrayBuffer);
+
+      // Create a mock EncryptedFileInfo for local file
+      const localFileInfo: EncryptedFileInfo = {
+        id: 'local-' + Date.now(),
+        fileHash: extractedHash || '',
+        originalName: file.name.replace('.enc', ''),
+        encryptedSize: file.size,
+        mimeType: 'application/octet-stream',
+        createdAt: new Date().toISOString(),
+      };
+
+      onFileSelected(arrayBuffer, localFileInfo);
+      onClose();
+    } catch (err) {
+      setError('Failed to read file. Please try again.');
+    } finally {
+      setUploadingLocal(false);
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSelectFile = async (file: EncryptedFileInfo) => {
@@ -118,8 +172,14 @@ export default function FilePickerModal({ isOpen, onClose, onFileSelected }: Fil
           <div className="p-6 border-b border-[#C0C8D4]/10">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Select from Cloud</h2>
-                <p className="text-sm text-[#8b96a8] mt-1">Choose a file from your secure cloud storage</p>
+                <h2 className="text-xl font-bold text-white">
+                  {isLoggedIn ? 'Select Encrypted File' : 'Upload Encrypted File'}
+                </h2>
+                <p className="text-sm text-[#8b96a8] mt-1">
+                  {isLoggedIn
+                    ? 'Choose from cloud storage or upload a local file'
+                    : 'Upload a .enc file encrypted by EternLink'}
+                </p>
               </div>
               <button
                 onClick={onClose}
@@ -132,9 +192,64 @@ export default function FilePickerModal({ isOpen, onClose, onFileSelected }: Fil
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 140px)' }}>
-            {loading ? (
+          {/* Local Upload Section - Only visible for non-logged-in users (Demo mode) */}
+          {!isLoggedIn && (
+            <div className="p-4 border-b border-[#C0C8D4]/10 bg-[#0a1628]/30">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".enc"
+                onChange={handleLocalFileUpload}
+                className="hidden"
+                id="local-enc-upload"
+              />
+              <label
+                htmlFor="local-enc-upload"
+                className={`flex items-center justify-center gap-3 p-4 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                  uploadingLocal
+                    ? 'border-[#3DA288]/50 bg-[#3DA288]/10 cursor-wait'
+                    : 'border-[#C0C8D4]/30 hover:border-[#3DA288]/50 hover:bg-[#3DA288]/5'
+                }`}
+              >
+                {uploadingLocal ? (
+                  <>
+                    <svg className="animate-spin h-6 w-6 text-[#3DA288]" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span className="text-[#3DA288] font-medium">Loading file...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-6 h-6 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span className="text-[#C0C8D4] font-medium">Upload local .enc file</span>
+                  </>
+                )}
+              </label>
+              <p className="text-xs text-[#8b96a8] text-center mt-2">
+                Select a .enc file that was encrypted using EternLink
+              </p>
+            </div>
+          )}
+
+          {/* Content - Cloud Files (only for logged in users) */}
+          <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 280px)' }}>
+            {!isLoggedIn ? (
+              <div className="text-center py-8">
+                <div className="inline-block p-4 rounded-full bg-[#1a2942]/60 mb-4">
+                  <svg className="w-12 h-12 text-[#8b96a8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Demo Mode</h3>
+                <p className="text-[#8b96a8] text-sm mb-4">
+                  Upload a local .enc file above to decrypt it.<br />
+                  <span className="text-[#3DA288]">Sign in</span> to access your cloud-stored files.
+                </p>
+              </div>
+            ) : loading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <svg className="animate-spin h-10 w-10 text-[#3DA288] mb-4" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -153,20 +268,26 @@ export default function FilePickerModal({ isOpen, onClose, onFileSelected }: Fil
                 </button>
               </div>
             ) : files.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="text-center py-8">
                 <div className="inline-block p-4 rounded-full bg-[#1a2942]/60 mb-4">
                   <svg className="w-12 h-12 text-[#8b96a8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">No Files Found</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">No Cloud Files</h3>
                 <p className="text-[#8b96a8] text-sm">
-                  You don't have any encrypted files yet.<br />
-                  Encrypt a file first to see it here.
+                  No encrypted files in your cloud storage.<br />
+                  Upload a local .enc file above or encrypt a new file.
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-5 h-5 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                  </svg>
+                  <span className="text-sm font-medium text-[#C0C8D4]">Your Cloud Files</span>
+                </div>
                 {files.map((file) => (
                   <button
                     key={file.id}

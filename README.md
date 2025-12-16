@@ -1,234 +1,271 @@
-# EternLink - Blockchain Proof of Existence MVP
+<div align="center">
 
-A blockchain-based file proof of existence system with local encryption and on-chain hash storage.
+<img src="assets/logo.svg" alt="EternLink Logo" width="180" />
 
-## Features
+# EternLink
 
-- ✅ Local file encryption (AES-256-GCM + PBKDF2)
-- ✅ File hash stored on blockchain (Base Sepolia Testnet)
-- ✅ On-chain file existence verification
-- ✅ Support for .txt file format
-- ✅ Complete client-side encryption for privacy protection
+### Blockchain-Powered Digital Asset Protection & Inheritance Platform
 
-## Tech Stack
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-18.2-61DAFB?logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Base Sepolia](https://img.shields.io/badge/Base-Sepolia-0052FF?logo=coinbase)](https://base.org/)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.20-363636?logo=solidity)](https://soliditylang.org/)
 
-- **Frontend**: React + TypeScript + Vite
-- **Blockchain**: Base Sepolia (EVM Compatible)
-- **Smart Contract**: Solidity 0.8.20
-- **Encryption**: Web Crypto API (AES-GCM, PBKDF2, SHA-256)
-- **Wallet**: MetaMask
+**Secure your digital legacy with military-grade encryption and blockchain immutability.**
 
-## Project Structure
+[Features](#-features) · [Quick Start](#-quick-start) · [Architecture](#-architecture) · [Documentation](#-documentation)
 
-```
-EternLink/
-├── contracts/           # Smart contracts
-│   └── ProofOfExistence.sol
-├── src/
-│   ├── App.tsx         # Main application component
-│   ├── main.tsx        # Application entry point
-│   ├── index.css       # Styles
-│   └── utils/
-│       ├── crypto.ts   # Encryption utilities
-│       └── contract.ts # Contract interaction utilities
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-└── README.md
-```
+</div>
 
-## Quick Start
+---
 
-### 1. Install Dependencies
+## The Problem
+
+In the digital age, we accumulate invaluable assets—documents, photos, credentials, and memories. But what happens to them if we're no longer around?
+
+- **Lost passwords** mean lost files forever
+- **Trusted third parties** can be compromised or go bankrupt
+- **Traditional inheritance** doesn't cover digital assets
+- **Complex crypto solutions** are inaccessible to most people
+
+## The Solution
+
+**EternLink** combines cutting-edge cryptography with blockchain technology to create a trustless, automated digital inheritance system—a "Dead Man's Switch" for your most important files.
+
+---
+
+## ✨ Features
+
+### Core Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| **2-of-3 Secret Sharing** | Shamir's Secret Sharing splits your encryption key into 3 shares. Any 2 can recover the key—you keep one, the platform stores one, and your beneficiary gets one. |
+| **AES-256-GCM Encryption** | Military-grade authenticated encryption ensures your files remain private and tamper-proof. |
+| **Blockchain Proof of Existence** | File hashes are permanently recorded on Base Sepolia, providing immutable proof of ownership without exposing content. |
+| **Dead Man's Switch** | Automated heartbeat monitoring triggers secure asset transfer to your designated beneficiary after configurable inactivity. |
+| **Zero-Knowledge Architecture** | The platform never sees your unencrypted data—all encryption happens client-side in your browser. |
+
+### User Experience
+
+- **No Wallet Required** — Platform-managed transactions mean no MetaMask, no gas fees, no crypto complexity
+- **Multi-Format Support** — Encrypt and protect any file type
+- **Multi-Channel Alerts** — Email, SMS, and voice call notifications for heartbeat reminders
+- **Intuitive Dashboard** — Beautiful, responsive interface built with React and Framer Motion
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/eternlink.git
+cd eternlink
+
+# Install dependencies
 npm install
-```
 
-### 2. Deploy Smart Contract
-
-#### Using Remix IDE
-
-1. Visit [Remix IDE](https://remix.ethereum.org)
-2. Create new file `ProofOfExistence.sol`
-3. Copy content from `contracts/ProofOfExistence.sol`
-4. Select compiler version 0.8.20
-5. Compile the contract
-6. In "Deploy & Run", select "Injected Provider - MetaMask"
-7. Ensure MetaMask network is Base Sepolia (Chain ID: 84532)
-8. Click "Deploy" to deploy contract
-9. Copy the deployed contract address
-
-#### Configure MetaMask Network
-
-If Base Sepolia network is not available in MetaMask, add it manually:
-
-- **Network Name**: Base Sepolia
-- **RPC URL**: https://sepolia.base.org
-- **Chain ID**: 84532
-- **Currency Symbol**: ETH
-- **Block Explorer**: https://sepolia.basescan.org
-
-#### Get Test Tokens
-
-Visit Base Sepolia Faucet to get test ETH:
-- https://docs.base.org/docs/tools/network-faucets
-
-### 3. Configure Frontend
-
-1. Open `src/App.tsx`
-2. Find `DEFAULTS.CONTRACT_ADDRESS`
-3. Replace with your deployed contract address from Remix
-
-Or enter the contract address directly in the application interface.
-
-### 4. Start Development Server
-
-```bash
+# Start development server
 npm run dev
 ```
 
-Visit http://localhost:5173
+Visit `http://localhost:5173` to see the application.
 
-### 5. Using the Application
-
-1. **Connect Wallet**: Click "Connect MetaMask" button
-2. **Select File**: Choose a .txt file
-3. **Enter Password**: Input encryption password (keep it safe)
-4. **Encrypt & Register**: Click "Encrypt & Register" button
-5. **Verify Existence**: Use "Verify on Chain" button to verify file registration
-
-## How It Works
-
-### Encryption Flow
-
-1. **File Selection**: User selects a .txt file
-2. **Calculate Hash**: Compute SHA-256 hash of plaintext file
-3. **Encrypt File**: Derive key using PBKDF2, encrypt with AES-GCM
-4. **Pack & Download**: Package encrypted file as .enc format and download
-5. **Register on Chain**: Write file hash and metadata to smart contract
-
-### Verification Flow
-
-1. **Select File**: Choose original .txt file
-2. **Calculate Hash**: Recompute SHA-256 hash of file
-3. **Query Chain**: Call smart contract `exists()` function
-4. **Return Result**: Display whether file exists on blockchain
-
-### Security Features
-
-- **Client-Side Encryption**: All encryption happens locally in browser
-- **Key Derivation**: PBKDF2 with 250,000 iterations
-- **Encryption Algorithm**: AES-256-GCM for confidentiality and integrity
-- **Hash Storage**: Only file hash stored on-chain, not content
-- **Privacy Protection**: File content never exposed on blockchain
-
-## Smart Contract Documentation
-
-### ProofOfExistence.sol
-
-**Functions**:
-- `register()`: Register file hash to blockchain
-- `exists()`: Check if file is registered
-
-**Events**:
-- `FileRegistered`: File registration event with all metadata
-
-**Mappings**:
-- `ownerOf`: File hash to owner address mapping
-
-## File Format
-
-### .enc File Format
-
-Encrypted files use the following format:
-
-```
-[salt (16 bytes)][IV (12 bytes)][encrypted data (variable length)]
-```
-
-- **salt**: PBKDF2 salt value (16 bytes)
-- **IV**: AES-GCM initialization vector (12 bytes)
-- **encrypted data**: Encrypted file content
-
-## Important Notes
-
-### Security Warnings
-
-- ⚠️ **Password Management**: Lost password means lost file access
-- ⚠️ **File Backup**: Keep .enc encrypted files safe
-- ⚠️ **Test Network**: Currently using testnet, not for production
-
-### Limitations
-
-- Currently only supports .txt file format
-- File size should be reasonable (to avoid high gas fees)
-- Only hash stored on-chain, not file content
-
-### Gas Fees
-
-- Base Sepolia Testnet: Nearly free
-- Base Mainnet: Very low fees
-- Ethereum Mainnet: Higher fees
-
-## Future Roadmap
-
-- [ ] Support more file formats (PDF, images, etc.)
-- [ ] Integrate IPFS for encrypted file storage
-- [ ] Add file decryption functionality
-- [ ] Support batch file registration
-- [ ] Add file metadata querying
-- [ ] Support mainnet deployment
-
-## Development Guide
-
-### Build for Production
+### Backend Setup (Optional)
 
 ```bash
-npm run build
+cd backend
+npm install
+npm run dev
 ```
 
-### Preview Production Build
+---
+
+## 🏗 Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Frontend (React)                        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │  Encryption │  │   QR Code   │  │     File Management     │  │
+│  │  (AES-GCM)  │  │  Generator  │  │       Dashboard         │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Backend (Express.js)                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │   Heartbeat │  │    Twilio   │  │    Cloudflare R2        │  │
+│  │   Monitor   │  │   Alerts    │  │      Storage            │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Blockchain (Base Sepolia)                    │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              ProofOfExistence Smart Contract             │   │
+│  │         • register(hash) → Immutable timestamp           │   │
+│  │         • exists(hash) → Verification query              │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 18, TypeScript, Vite, Framer Motion |
+| Backend | Express.js, Prisma, PostgreSQL |
+| Blockchain | Base Sepolia (L2), Solidity 0.8.20, ethers.js |
+| Cryptography | Web Crypto API, Shamir's Secret Sharing |
+| Storage | Cloudflare R2 |
+| Notifications | Twilio (SMS, Voice), Nodemailer |
+
+---
+
+## 📖 Documentation
+
+### How It Works
+
+#### 1. Encryption & Key Splitting
+
+```
+Original File → SHA-256 Hash → AES-256-GCM Encryption
+                                      ↓
+                              Encryption Key
+                                      ↓
+                    ┌─────────────────┼─────────────────┐
+                    ▼                 ▼                 ▼
+                Share 1           Share 2           Share 3
+               (User QR)        (Platform)       (Beneficiary)
+```
+
+#### 2. Blockchain Registration
+
+Your file's hash is recorded on-chain, creating permanent proof of:
+- **Existence** — The file existed at a specific time
+- **Ownership** — Linked to your account
+- **Integrity** — Any modification changes the hash
+
+#### 3. Dead Man's Switch
+
+```
+User Activity ──────────────────────────────────────────▶ Reset Timer
+       │
+       │ (Inactivity detected)
+       ▼
+   Day 1: Email reminder
+   Day 3: SMS reminder
+   Day 7: Voice call
+   Day 14: Beneficiary notified + Share 2 released
+```
+
+### Security Model
+
+| Threat | Mitigation |
+|--------|------------|
+| Platform compromise | 2-of-3 SSS means platform share alone is useless |
+| Key loss | Any 2 shares can reconstruct the key |
+| Unauthorized access | AES-256-GCM + PBKDF2 (250k iterations) |
+| Data tampering | Blockchain verification + GCM authentication |
+| Man-in-the-middle | All encryption client-side, HTTPS transport |
+
+---
+
+## 🛠 Development
+
+### Commands
 
 ```bash
-npm run preview
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+npm run test         # Run tests
+npm run test:ui      # Run tests with UI
+npm run test:coverage # Run tests with coverage
 ```
 
-### Lint Code
+### Project Structure
 
-```bash
-npm run lint
+```
+EternLink/
+├── contracts/              # Solidity smart contracts
+│   └── ProofOfExistence.sol
+├── src/
+│   ├── components/         # React components
+│   ├── pages/              # Page components
+│   ├── utils/
+│   │   ├── crypto.ts       # Encryption utilities
+│   │   ├── contract.ts     # Blockchain interactions
+│   │   └── sss.ts          # Shamir's Secret Sharing
+│   └── App.tsx
+├── backend/
+│   ├── routes/             # API endpoints
+│   ├── services/           # Business logic
+│   └── prisma/             # Database schema
+└── README.md
 ```
 
-## FAQ
+---
 
-### Q: Why Base Sepolia?
+## 🗺 Roadmap
 
-A: Base Sepolia is Coinbase's L2 testnet with extremely low gas fees, mature tooling, and easy migration to Base mainnet.
+- [x] AES-256-GCM client-side encryption
+- [x] Blockchain proof of existence
+- [x] 2-of-3 Shamir's Secret Sharing
+- [x] Automated heartbeat monitoring
+- [x] Multi-channel notifications
+- [ ] IPFS integration for decentralized storage
+- [ ] Mobile app (React Native)
+- [ ] Hardware wallet support
+- [ ] Multi-signature beneficiary approval
+- [ ] Mainnet deployment
 
-### Q: Is file content stored on-chain?
+---
 
-A: No. Only file hash and metadata are stored on-chain. File content is encrypted and stored locally.
+## ⚠️ Important Notes
 
-### Q: How to decrypt files?
+> **Testnet Only**: EternLink currently runs on Base Sepolia testnet. Do not use for production assets.
 
-A: Current MVP version doesn't include decryption feature. Future versions will add this. You need to save the encrypted file and password.
+> **Password Security**: Lost passwords cannot be recovered. Store your encryption password and QR code share securely.
 
-### Q: Can I use this on mainnet?
+> **Backup Your Shares**: The 2-of-3 system requires any 2 shares for decryption. Losing 2+ shares means permanent data loss.
 
-A: Yes, but you need to:
-1. Deploy contract to mainnet (Base mainnet or Ethereum mainnet)
-2. Update chain ID and contract address in frontend config
-3. Use real ETH to pay gas fees
+---
 
-## License
+## 📄 License
 
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contributing
+---
 
-Issues and Pull Requests are welcome!
+## 🤝 Contributing
 
-## Contact
+Contributions are welcome! Please read our contributing guidelines before submitting a PR.
 
-For questions, please submit an Issue or contact the maintainers.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+<div align="center">
+
+**Built with security in mind, designed for everyone.**
+
+[Report Bug](https://github.com/yourusername/eternlink/issues) · [Request Feature](https://github.com/yourusername/eternlink/issues)
+
+</div>

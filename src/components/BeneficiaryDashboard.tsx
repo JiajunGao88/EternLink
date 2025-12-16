@@ -70,6 +70,7 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
   const [deathClaims, setDeathClaims] = useState<DeathClaim[]>([]);
   const [selectedClaim, setSelectedClaim] = useState<DeathClaimDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [claimDetailsLoading, setClaimDetailsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState<'users' | 'claims'>('users');
@@ -82,8 +83,10 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
       const oldestLink = linkedUsers.reduce((oldest, current) =>
         new Date(current.linkedAt) < new Date(oldest.linkedAt) ? current : oldest
       );
-      const days = Math.floor((Date.now() - new Date(oldestLink.linkedAt).getTime()) / (1000 * 60 * 60 * 24));
-      return days;
+      const linkedDate = new Date(oldestLink.linkedAt);
+      if (isNaN(linkedDate.getTime())) return 0;
+      const days = Math.floor((Date.now() - linkedDate.getTime()) / (1000 * 60 * 60 * 24));
+      return days >= 0 ? days : 0;
     }
     return 0;
   };
@@ -113,8 +116,8 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
         throw new Error(data.error || 'Failed to fetch linked users');
       }
 
-      // API returns linkedUsers; default to empty array to avoid undefined.length
-      setLinkedUsers(Array.isArray(data.linkedUsers) ? data.linkedUsers : []);
+      // API returns 'users' field; default to empty array to avoid undefined.length
+      setLinkedUsers(Array.isArray(data.users) ? data.users : []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch linked users');
     } finally {
@@ -175,7 +178,7 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
   };
 
   const handleViewClaimDetails = async (claimId: string) => {
-    setLoading(true);
+    setClaimDetailsLoading(true);
     setError('');
 
     try {
@@ -194,7 +197,7 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
     } catch (err: any) {
       setError(err.message || 'Failed to fetch claim details');
     } finally {
-      setLoading(false);
+      setClaimDetailsLoading(false);
     }
   };
 
@@ -230,15 +233,21 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleString();
   };
 
   const getDaysSinceLastLogin = (lastLoginAt: string | null) => {
     if (!lastLoginAt) return 'Never logged in';
-    const days = Math.floor((Date.now() - new Date(lastLoginAt).getTime()) / (1000 * 60 * 60 * 24));
+    const date = new Date(lastLoginAt);
+    if (isNaN(date.getTime())) return 'Never logged in';
+    const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
     if (days === 0) return 'Today';
     if (days === 1) return '1 day ago';
+    if (days < 0) return 'Today';
     return `${days} days ago`;
   };
 
@@ -477,9 +486,10 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
 
                         <button
                           onClick={() => handleViewClaimDetails(claim.id)}
-                          className="px-4 py-2 bg-[#C0C8D4]/10 border border-[#C0C8D4]/20 text-[#C0C8D4] rounded-lg hover:bg-[#C0C8D4]/20 transition-colors"
+                          disabled={claimDetailsLoading}
+                          className="px-4 py-2 bg-[#C0C8D4]/10 border border-[#C0C8D4]/20 text-[#C0C8D4] rounded-lg hover:bg-[#C0C8D4]/20 transition-colors disabled:opacity-50"
                         >
-                          View Details
+                          {claimDetailsLoading ? 'Loading...' : 'View Details'}
                         </button>
                       </div>
                     </motion.div>

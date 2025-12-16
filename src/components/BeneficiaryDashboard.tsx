@@ -113,7 +113,8 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
         throw new Error(data.error || 'Failed to fetch linked users');
       }
 
-      setLinkedUsers(data.users);
+      // API returns linkedUsers; default to empty array to avoid undefined.length
+      setLinkedUsers(Array.isArray(data.linkedUsers) ? data.linkedUsers : []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch linked users');
     } finally {
@@ -133,7 +134,7 @@ export default function BeneficiaryDashboard({ onLogout }: BeneficiaryDashboardP
         throw new Error(data.error || 'Failed to fetch death claims');
       }
 
-      setDeathClaims(data.claims);
+      setDeathClaims(Array.isArray(data.claims) ? data.claims : []);
     } catch (err: any) {
       console.error('Error fetching death claims:', err);
     }

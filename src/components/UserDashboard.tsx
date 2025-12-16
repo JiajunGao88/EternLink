@@ -56,9 +56,10 @@ interface UserDashboardProps {
   onLogout: () => void;
   onTryDemo?: () => void;
   onBuyPlan?: () => void; // Callback to trigger plan purchase/onboarding
+  decryptedAtMap?: Record<string, string>;
 }
 
-export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDashboardProps) {
+export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan, decryptedAtMap }: UserDashboardProps) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [linkedBeneficiaries, setLinkedBeneficiaries] = useState<LinkedBeneficiary[]>([]);
   const [heartbeatStatus, setHeartbeatStatus] = useState<HeartbeatStatus | null>(null);
@@ -518,15 +519,21 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
                 <div style={styles.infoGrid}>
                   <div style={styles.infoItem}>
                     <span style={styles.infoLabel}>Email Notifications</span>
-                    <span style={styles.infoValue}>{userData?.emailNotificationDays} days before</span>
+                    <span style={styles.infoValue}>
+                      {userData?.emailNotificationDays != null ? `${userData.emailNotificationDays} days before` : 'Not configured'}
+                    </span>
                   </div>
                   <div style={styles.infoItem}>
                     <span style={styles.infoLabel}>Phone Notifications</span>
-                    <span style={styles.infoValue}>{userData?.phoneNotificationDays} days before</span>
+                    <span style={styles.infoValue}>
+                      {userData?.phoneNotificationDays != null ? `${userData.phoneNotificationDays} days before` : 'Not configured'}
+                    </span>
                   </div>
                   <div style={styles.infoItem}>
                     <span style={styles.infoLabel}>Freeze Period</span>
-                    <span style={styles.infoValue}>{userData?.freezeDays} days</span>
+                    <span style={styles.infoValue}>
+                      {userData?.freezeDays != null ? `${userData.freezeDays} days` : 'Not configured'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -679,15 +686,7 @@ export default function UserDashboard({ onLogout, onTryDemo, onBuyPlan }: UserDa
             transition={{ duration: 0.3 }}
           >
             <div style={styles.card}>
-              <YourFilesTab
-                onDecryptFile={(_fileHash) => {
-                  // Switch to encryption mode with this file
-                  if (onTryDemo) {
-                    onTryDemo();
-                  }
-                  // TODO: Pass fileHash to decrypt mode
-                }}
-              />
+              <YourFilesTab decryptedAtMap={decryptedAtMap} />
             </div>
           </motion.div>
         )}
@@ -802,6 +801,8 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     backdropFilter: 'blur(10px)',
+    outline: 'none',
+    boxShadow: 'none',
   },
   activeTab: {
     background: 'rgba(61, 162, 136, 0.2)',

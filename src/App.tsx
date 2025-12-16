@@ -14,7 +14,7 @@ import {
 } from "./utils/crypto";
 import { splitKey, reconstructKey, type KeyShares } from "./utils/secretSharing";
 import ShamirDemoEnhanced from "./components/ShamirDemoEnhanced";
-import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain, uploadEncryptedFile, EncryptedFileInfo } from "./utils/api";
+import { registerFileHashSSS, verifyFileHash, getKeyShare3FromBlockchain, uploadEncryptedFile, markFileDecrypted, EncryptedFileInfo } from "./utils/api";
 import FilePickerModal from "./components/FilePickerModal";
 import ProductLandingPage from "./components/ProductLandingPage";
 import BeneficiaryRegistrationPage from "./components/BeneficiaryRegistrationPage";
@@ -76,7 +76,8 @@ function App() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [fileHash, setFileHash] = useState<string>("");
-  const [txHash, setTxHash] = useState<string>("");
+const [txHash, setTxHash] = useState<string>("");
+const [decryptedAtMap, setDecryptedAtMap] = useState<Record<string, string>>({});
   
   // SSS shares state
   const [keyShares, setKeyShares] = useState<KeyShares | null>(null);
@@ -262,9 +263,9 @@ function App() {
             setShowOnboarding(true);
           }
         }}
-        onBackToHome={() => {
+        onBackToLogin={() => {
           setShowRegistration(false);
-          setShowProductLanding(true);
+          setShowLogin(true);
         }}
         onLoginClick={() => {
           setShowRegistration(false);
@@ -377,6 +378,7 @@ function App() {
           setShowUserDashboard(false);
           setShowPlanSelection(true);
         }}
+        decryptedAtMap={decryptedAtMap}
       />
     );
   }
@@ -628,6 +630,25 @@ function App() {
       const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
 
+      // Mark file as decrypted (optimistic update)
+      const token = localStorage.getItem('authToken');
+      if (token && decryptFileHash) {
+        const nowIso = new Date().toISOString();
+        setDecryptedAtMap((prev) => ({
+          ...prev,
+          [decryptFileHash.trim()]: nowIso,
+        }));
+        if (selectedServerFile) {
+          setSelectedServerFile({
+            ...selectedServerFile,
+            lastDecryptedAt: nowIso,
+          });
+        }
+        markFileDecrypted(decryptFileHash.trim()).catch(err => {
+          console.warn('Failed to mark file as decrypted:', err);
+        });
+      }
+
       setStatus({
         type: "success",
         message: `File decrypted successfully! Downloaded as: ${originalName}`,
@@ -683,6 +704,26 @@ function App() {
       const blob = new Blob([decrypted], { type: mimeType });
       downloadFile(blob, originalName);
 
+      // Mark file as decrypted (optimistic update)
+      const token = localStorage.getItem('authToken');
+      const fileHashToMark = selectedServerFile?.fileHash || decryptFileHash?.trim();
+      if (token && fileHashToMark) {
+        const nowIso = new Date().toISOString();
+        setDecryptedAtMap((prev) => ({
+          ...prev,
+          [fileHashToMark]: nowIso,
+        }));
+        if (selectedServerFile && selectedServerFile.fileHash === fileHashToMark) {
+          setSelectedServerFile({
+            ...selectedServerFile,
+            lastDecryptedAt: nowIso,
+          });
+        }
+        markFileDecrypted(fileHashToMark).catch(err => {
+          console.warn('Failed to mark file as decrypted:', err);
+        });
+      }
+
       setStatus({
         type: "success",
         message: `File decrypted successfully! Downloaded as: ${originalName}`,
@@ -725,6 +766,11 @@ function App() {
           type: "success",
           message: "✓ File exists on blockchain",
         });
+        // Prefer the transaction hash link if available (same as tx hash link shown below)
+        const explorerLink = txHash
+          ? `${EXPLORER_URL}/tx/${txHash}`
+          : `${EXPLORER_URL}/search?f=0&q=${encodeURIComponent(hashHex)}`;
+        window.open(explorerLink, '_blank', 'noopener,noreferrer');
       } else {
         setStatus({
           type: "info",
@@ -1115,16 +1161,24 @@ function App() {
                     <div className="p-4 bg-[#0f1e2e]/80 border border-[#3DA288]/50 rounded-xl">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-[#3DA288]/20 rounded-lg">
-                          <svg className="w-8 h-8 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                          </svg>
+                          {selectedServerFile?.id?.startsWith('local-') ? (
+                            <svg className="w-8 h-8 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                          ) : (
+                            <svg className="w-8 h-8 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[#C0C8D4] font-medium truncate">
                             {selectedServerFile?.originalName}.enc
                           </p>
                           <p className="text-sm text-[#8b96a8]">
-                            From your secure cloud storage
+                            {selectedServerFile?.id?.startsWith('local-')
+                              ? 'Local file upload'
+                              : 'From your secure cloud storage'}
                           </p>
                         </div>
                         <button
@@ -1148,11 +1202,17 @@ function App() {
                     >
                       <div className="p-4 bg-[#3DA288]/20 rounded-full mb-4">
                         <svg className="w-10 h-10 text-[#3DA288]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                          {localStorage.getItem('authToken') ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                          ) : (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          )}
                         </svg>
                       </div>
                       <span className="text-base font-semibold text-[#3DA288]">Select Encrypted File</span>
-                      <span className="text-sm text-[#8b96a8] mt-1">Select from cloud</span>
+                      <span className="text-sm text-[#8b96a8] mt-1">
+                        {localStorage.getItem('authToken') ? 'Select from cloud storage' : 'Upload local .enc file'}
+                      </span>
                     </button>
                   )}
                 </div>

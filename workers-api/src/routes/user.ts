@@ -62,6 +62,7 @@ userRoutes.get('/profile', async (c) => {
         freezeDays: user.freezeDays,
         twoFactorEnabled: user.twoFactorEnabled,
         createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
       },
     });
   } catch (error) {
@@ -258,6 +259,11 @@ userRoutes.post('/complete-onboarding', async (c) => {
   const body = await c.req.json();
 
   try {
+    // Support both new flattened fields and legacy nested notificationConfig
+    const emailNotificationDays = body.emailNotificationDays ?? body.notificationConfig?.emailNotificationDays;
+    const phoneNotificationDays = body.phoneNotificationDays ?? body.notificationConfig?.phoneNotificationDays;
+    const freezeDays = body.freezeDays ?? body.notificationConfig?.accountFreezeDays;
+
     const updateData: Record<string, unknown> = {
       onboardingCompleted: true,
       // Activate subscription when onboarding is completed (free trial or default active)
@@ -266,14 +272,14 @@ userRoutes.post('/complete-onboarding', async (c) => {
     };
 
     // Optional fields from onboarding
-    if (body.emailNotificationDays !== undefined) {
-      updateData.emailNotificationDays = body.emailNotificationDays;
+    if (emailNotificationDays !== undefined) {
+      updateData.emailNotificationDays = emailNotificationDays;
     }
-    if (body.phoneNotificationDays !== undefined) {
-      updateData.phoneNotificationDays = body.phoneNotificationDays;
+    if (phoneNotificationDays !== undefined) {
+      updateData.phoneNotificationDays = phoneNotificationDays;
     }
-    if (body.freezeDays !== undefined) {
-      updateData.freezeDays = body.freezeDays;
+    if (freezeDays !== undefined) {
+      updateData.freezeDays = freezeDays;
     }
 
     await db.update(users)
@@ -304,6 +310,26 @@ userRoutes.get('/me', async (c) => {
       return c.json({ success: false, error: 'User not found' }, 404);
     }
 
+    // Backfill notification settings if missing (default: Balanced)
+    const defaultEmail = 14;
+    const defaultPhone = 30;
+    const defaultFreeze = 60;
+    const needsBackfill = user.emailNotificationDays == null || user.phoneNotificationDays == null || user.freezeDays == null;
+    if (needsBackfill) {
+      await db.update(users)
+        .set({
+          emailNotificationDays: user.emailNotificationDays ?? defaultEmail,
+          phoneNotificationDays: user.phoneNotificationDays ?? defaultPhone,
+          freezeDays: user.freezeDays ?? defaultFreeze,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+      // reflect in response
+      user.emailNotificationDays = user.emailNotificationDays ?? defaultEmail;
+      user.phoneNotificationDays = user.phoneNotificationDays ?? defaultPhone;
+      user.freezeDays = user.freezeDays ?? defaultFreeze;
+    }
+
     return c.json({
       success: true,
       user: {
@@ -320,6 +346,10 @@ userRoutes.get('/me', async (c) => {
         onboardingCompleted: user.onboardingCompleted,
         twoFactorEnabled: user.twoFactorEnabled,
         createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+        emailNotificationDays: user.emailNotificationDays,
+        phoneNotificationDays: user.phoneNotificationDays,
+        freezeDays: user.freezeDays,
       },
     });
   } catch (error) {
